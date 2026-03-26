@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging, develop]
+  pull_request:
+    branches: [main, staging, develop]
+
+jobs:
+  backend:
+    name: Backend — Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: quotefast_test
+          POSTGRES_USER: quotefast
+          POSTGRES_PASSWORD: quotefast_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Lint
+        run: npm run lint
+        working-directory: backend
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Run migrations (test DB)
+        run: npx prisma migrate deploy
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://quotefast:quotefast_test@localhost:5432/quotefast_test
+
+      - name: Run tests
+        run: npm run test:run
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://quotefast:quotefast_test@localhost:5432/quotefast_test
+          JWT_SECRET: test-secret-min-32-chars-for-ci-only
+          JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars-ci
+          NODE_ENV: test
+
+      - name: Build
+        run: npm run build
+        working-directory: backend
+
+  frontend:
+    name: Frontend — Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Type check
+        run: npm run type-check
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3000
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit backend
+        run: npm audit --audit-level=high
+        working-directory: backend
+        continue-on-error: true
+      - name: Audit frontend
+        run: npm audit --audit-level=high
+        working-directory: frontend
+        continue-on-error: true
