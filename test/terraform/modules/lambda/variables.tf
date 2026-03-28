@@ -60,6 +60,12 @@ variable "timeout" {
   default     = 60
 }
 
+variable "ephemeral_storage_size" {
+  description = "Lambda ephemeral storage in MB (/tmp) — 512 MB según estimado AWS"
+  type        = number
+  default     = 512
+}
+
 variable "workers_artifact_path" {
   description = "Path to the workers zip artifact"
   type        = string

@@ -20,17 +20,20 @@ variable "ses_from_email" {
   type        = string
 }
 
-variable "certificate_arn" {
-  description = "ACM certificate ARN for HTTPS"
+variable "jwt_secret_value" {
+  description = "JWT access token signing key (min 32 chars)"
   type        = string
+  sensitive   = true
 }
 
-variable "jwt_secret_arn" {
-  description = "ARN of Secrets Manager secret for JWT_SECRET"
+variable "jwt_refresh_secret_value" {
+  description = "JWT refresh token signing key (min 32 chars)"
   type        = string
+  sensitive   = true
 }
 
-variable "jwt_refresh_secret_arn" {
-  description = "ARN of Secrets Manager secret for JWT_REFRESH_SECRET"
-  type        = string
+variable "cors_allow_origins" {
+  description = "Allowed CORS origins for API Gateway"
+  type        = list(string)
+  default     = ["https://app.quotefast.io"]
 }

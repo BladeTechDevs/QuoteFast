@@ -18,9 +18,9 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
 }
 
-output "sg_alb_id" {
-  description = "ID of the ALB security group"
-  value       = aws_security_group.alb.id
+output "sg_api_gateway_id" {
+  description = "ID of the API Gateway VPC Link security group"
+  value       = aws_security_group.api_gateway.id
 }
 
 output "sg_ecs_id" {

@@ -1,6 +1,6 @@
-output "alb_dns_name" {
-  description = "ALB DNS name — use this as the API base URL"
-  value       = module.alb.alb_dns_name
+output "api_gateway_url" {
+  description = "API Gateway invoke URL — use this as the API base URL"
+  value       = module.api_gateway.api_gateway_url
 }
 
 output "rds_endpoint" {
@@ -12,6 +12,16 @@ output "rds_endpoint" {
 output "db_credentials_secret_arn" {
   description = "ARN of the secret containing DATABASE_URL"
   value       = module.rds.db_credentials_secret_arn
+}
+
+output "jwt_secret_arn" {
+  description = "ARN of the JWT secret in Secrets Manager"
+  value       = module.secrets_manager.jwt_secret_arn
+}
+
+output "jwt_refresh_secret_arn" {
+  description = "ARN of the JWT refresh secret in Secrets Manager"
+  value       = module.secrets_manager.jwt_refresh_secret_arn
 }
 
 output "sqs_queue_url" {

@@ -70,7 +70,7 @@ resource "aws_eip" "nat" {
   })
 }
 
-# NAT Gateways (one per AZ for HA)
+# NAT Gateway — 1 per AZ (single AZ = single NAT Gateway, ~$32.89/mes)
 resource "aws_nat_gateway" "main" {
   count         = length(var.availability_zones)
   allocation_id = aws_eip.nat[count.index].id

@@ -33,9 +33,14 @@ resource "aws_lambda_function" "pdf_worker" {
   role          = aws_iam_role.lambda.arn
   handler       = "pdf-worker.handler"
   runtime       = "nodejs20.x"
+  architectures = ["x86_64"]
   memory_size   = var.memory_size
   timeout       = var.timeout
   filename      = var.workers_artifact_path
+
+  ephemeral_storage {
+    size = var.ephemeral_storage_size
+  }
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids
@@ -61,9 +66,14 @@ resource "aws_lambda_function" "email_worker" {
   role          = aws_iam_role.lambda.arn
   handler       = "email-worker.handler"
   runtime       = "nodejs20.x"
+  architectures = ["x86_64"]
   memory_size   = var.memory_size
   timeout       = var.timeout
   filename      = var.workers_artifact_path
+
+  ephemeral_storage {
+    size = var.ephemeral_storage_size
+  }
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids
@@ -83,15 +93,20 @@ resource "aws_lambda_function" "email_worker" {
   })
 }
 
-# Expiry Worker Lambda — triggered by EventBridge schedule (every hour)
+# Expiry Worker Lambda — triggered by EventBridge schedule
 resource "aws_lambda_function" "expiry_worker" {
   function_name = "${local.name_prefix}-expiry-worker"
   role          = aws_iam_role.lambda.arn
   handler       = "expiry-worker.handler"
   runtime       = "nodejs20.x"
+  architectures = ["x86_64"]
   memory_size   = 256
   timeout       = 120
   filename      = var.workers_artifact_path
+
+  ephemeral_storage {
+    size = 512
+  }
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids

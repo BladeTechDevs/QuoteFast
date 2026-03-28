@@ -76,7 +76,7 @@ resource "aws_ecs_task_definition" "api" {
   tags = local.common_tags
 }
 
-# ECS Service
+# ECS Service — no load_balancer block (API Gateway connects via VPC Link + Cloud Map)
 resource "aws_ecs_service" "api" {
   name            = "${local.name_prefix}-api"
   cluster         = aws_ecs_cluster.main.id
@@ -90,13 +90,7 @@ resource "aws_ecs_service" "api" {
     assign_public_ip = false
   }
 
-  load_balancer {
-    target_group_arn = var.target_group_arn
-    container_name   = "api"
-    container_port   = 3000
-  }
-
-  deployment_minimum_healthy_percent = 50
+  deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
   lifecycle {

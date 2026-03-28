@@ -23,9 +23,10 @@ variable "sg_ecs_id" {
   type        = string
 }
 
-variable "target_group_arn" {
-  description = "ALB target group ARN"
+variable "ecs_service_discovery_namespace_id" {
+  description = "Cloud Map namespace ID for service discovery (used by API Gateway VPC Link)"
   type        = string
+  default     = ""
 }
 
 variable "ecr_image_uri" {
@@ -46,21 +47,21 @@ variable "memory" {
 }
 
 variable "desired_count" {
-  description = "Desired number of ECS tasks"
+  description = "Desired number of ECS tasks (1 = ~730h/mes según estimado AWS)"
   type        = number
   default     = 1
 }
 
 variable "min_capacity" {
-  description = "Minimum number of ECS tasks for autoscaling"
+  description = "Minimum number of ECS tasks (kept equal to desired for fixed cost)"
   type        = number
   default     = 1
 }
 
 variable "max_capacity" {
-  description = "Maximum number of ECS tasks for autoscaling"
+  description = "Maximum number of ECS tasks"
   type        = number
-  default     = 4
+  default     = 1
 }
 
 variable "database_url_secret_arn" {
