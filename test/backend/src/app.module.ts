@@ -11,6 +11,7 @@ import { PublicModule } from './public/public.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { TemplatesModule } from './templates/templates.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { BrandingModule } from './branding/branding.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     TrackingModule,
     TemplatesModule,
     DashboardModule,
+    BrandingModule,
   ],
 })
 export class AppModule {}

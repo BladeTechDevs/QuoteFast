@@ -28,7 +28,21 @@ export class PublicQuotesService {
       include: {
         items: { orderBy: { order: 'asc' } },
         client: { select: { name: true, company: true } },
-        user: { select: { name: true, company: true } },
+        user: {
+          select: {
+            name: true,
+            company: true,
+            brandingSettings: {
+              select: {
+                logoUrl: true,
+                primaryColor: true,
+                accentColor: true,
+                footerText: true,
+                companyName: true,
+              },
+            },
+          },
+        },
         signature: { select: { signerName: true, signatureImage: true, signedAt: true } },
       },
     });
@@ -50,7 +64,21 @@ export class PublicQuotesService {
       include: {
         items: { orderBy: { order: 'asc' } },
         client: { select: { name: true, company: true } },
-        user: { select: { name: true, company: true } },
+        user: {
+          select: {
+            name: true,
+            company: true,
+            brandingSettings: {
+              select: {
+                logoUrl: true,
+                primaryColor: true,
+                accentColor: true,
+                footerText: true,
+                companyName: true,
+              },
+            },
+          },
+        },
         signature: { select: { signerName: true, signatureImage: true, signedAt: true } },
       },
     });
@@ -96,10 +124,21 @@ export class PublicQuotesService {
     terms: string | null;
     validUntil: Date | null;
     pdfUrl: string | null;
-    user: { name: string; company: string | null };
+    user: {
+      name: string;
+      company: string | null;
+      brandingSettings?: {
+        logoUrl: string | null;
+        primaryColor: string;
+        accentColor: string;
+        footerText: string | null;
+        companyName: string | null;
+      } | null;
+    };
     client: { name: string; company: string | null } | null;
     signature?: { signerName: string; signatureImage: string; signedAt: Date } | null;
   }) {
+    const b = quote.user.brandingSettings;
     return {
       publicId: quote.publicId,
       title: quote.title,
@@ -137,6 +176,13 @@ export class PublicQuotesService {
             signedAt: quote.signature.signedAt,
           }
         : null,
+      branding: {
+        logoUrl: b?.logoUrl ?? null,
+        primaryColor: b?.primaryColor ?? '#2563eb',
+        accentColor: b?.accentColor ?? '#1d4ed8',
+        footerText: b?.footerText ?? null,
+        companyName: b?.companyName ?? null,
+      },
     };
   }
 

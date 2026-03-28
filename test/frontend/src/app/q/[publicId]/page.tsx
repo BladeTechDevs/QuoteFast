@@ -31,6 +31,15 @@ export default function PublicQuotePage({ params }: Props) {
   const [signed, setSigned] = useState(false);
   const [actionDone, setActionDone] = useState(false);
 
+  // Normalize branding — may be absent on quotes created before Stage 3
+  const branding = {
+    logoUrl: quote?.branding?.logoUrl ?? null,
+    primaryColor: quote?.branding?.primaryColor ?? '#2563eb',
+    accentColor: quote?.branding?.accentColor ?? '#1d4ed8',
+    footerText: quote?.branding?.footerText ?? null,
+    companyName: quote?.branding?.companyName ?? null,
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -63,12 +72,25 @@ export default function PublicQuotePage({ params }: Props) {
       <div className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium text-gray-700">Cotización</span>
+            {branding.logoUrl ? (
+              <img
+                src={branding.logoUrl}
+                alt={branding.companyName ?? quote.issuer.company ?? 'Logo'}
+                className="h-8 w-auto object-contain"
+              />
+            ) : (
+              <div
+                className="h-8 w-8 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: branding.primaryColor }}
+              >
+                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            )}
+            <span className="text-sm font-medium text-gray-700">
+              {branding.companyName ?? quote.issuer.company ?? 'Cotización'}
+            </span>
           </div>
           <StatusBadge status={quote.status} />
         </div>
@@ -78,7 +100,10 @@ export default function PublicQuotePage({ params }: Props) {
 
         {/* Document header */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-6">
+          <div
+            className="px-8 py-6"
+            style={{ background: `linear-gradient(to right, ${branding.primaryColor}, ${branding.accentColor})` }}
+          >
             <h1 className="text-2xl font-bold text-white">{quote.title}</h1>
             {quote.validUntil && (
               <p className="mt-1 text-blue-100 text-sm">
@@ -246,6 +271,11 @@ export default function PublicQuotePage({ params }: Props) {
         <p className="text-center text-xs text-gray-300 pb-4">
           Cotización #{publicId}
         </p>
+        {branding.footerText && (
+          <p className="text-center text-xs text-gray-400 pb-2">
+            {branding.footerText}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -40,7 +40,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: request.url,
       message:
         typeof message === 'object' && 'message' in (message as object)
-          ? (message as { message: string }).message
+          ? (message as { message: unknown }).message
           : message,
     });
   }

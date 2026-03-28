@@ -112,6 +112,14 @@ export interface PublicQuoteItem {
   order: number;
 }
 
+export interface BrandingSettings {
+  logoUrl: string | null;
+  primaryColor: string;
+  accentColor: string;
+  footerText: string | null;
+  companyName: string | null;
+}
+
 export interface PublicQuote {
   publicId: string;
   title: string;
@@ -130,4 +138,5 @@ export interface PublicQuote {
   issuer: { name: string; company: string | null };
   client: { name: string; company: string | null } | null;
   signature: { signerName: string; signatureImage: string; signedAt: string } | null;
+  branding: BrandingSettings;
 }
