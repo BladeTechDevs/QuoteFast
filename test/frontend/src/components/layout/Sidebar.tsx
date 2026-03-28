@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api';
 import { clsx } from 'clsx';
 
 const navItems = [
@@ -13,9 +15,32 @@ const navItems = [
   { href: '/settings', label: 'Configuración', icon: '⚙️' },
 ];
 
+interface PlanUsage {
+  plan: string;
+  quotesThisMonth: number;
+  quotesLimit: number | null;
+  quotesRemaining: number | null;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+
+  const { data: usage } = useQuery<PlanUsage>({
+    queryKey: ['plan-usage'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PlanUsage>('/auth/usage');
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const showUsageWarning =
+    usage?.quotesLimit !== null &&
+    usage?.quotesLimit !== undefined &&
+    usage.quotesRemaining !== null &&
+    usage.quotesRemaining <= 1;
 
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white">
@@ -42,6 +67,32 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* Plan usage widget */}
+      {usage && usage.quotesLimit !== null && (
+        <div className={clsx(
+          'mx-3 mb-3 rounded-lg px-3 py-2.5 text-xs',
+          showUsageWarning ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'
+        )}>
+          <div className="flex items-center justify-between mb-1">
+            <span className={showUsageWarning ? 'text-red-700 font-medium' : 'text-gray-500'}>
+              Cotizaciones
+            </span>
+            <span className={`font-semibold ${showUsageWarning ? 'text-red-700' : 'text-gray-700'}`}>
+              {usage.quotesThisMonth}/{usage.quotesLimit}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div
+              className={`h-1.5 rounded-full ${showUsageWarning ? 'bg-red-500' : 'bg-blue-500'}`}
+              style={{ width: `${Math.min(100, (usage.quotesThisMonth / usage.quotesLimit) * 100)}%` }}
+            />
+          </div>
+          {usage.quotesRemaining === 0 && (
+            <p className="mt-1 text-red-600 font-medium">Límite alcanzado</p>
+          )}
+        </div>
+      )}
 
       {/* User */}
       {user && (

@@ -4,8 +4,7 @@ export type QuoteStatus =
   | 'VIEWED'
   | 'ACCEPTED'
   | 'REJECTED'
-  | 'EXPIRED'
-  | 'SIGNED';
+  | 'EXPIRED';
 
 export interface Client {
   id: string;
@@ -67,6 +66,9 @@ export interface QuoteItem {
   description?: string | null;
   quantity: number;
   unitPrice: number;
+  discount: number;
+  taxRate: number;
+  internalCost: number;
   total: number;
   order: number;
 }
@@ -104,6 +106,8 @@ export interface PublicQuoteItem {
   description: string | null;
   quantity: number;
   unitPrice: number;
+  discount: number;
+  taxRate: number;
   total: number;
   order: number;
 }
@@ -125,4 +129,5 @@ export interface PublicQuote {
   pdfUrl: string | null;
   issuer: { name: string; company: string | null };
   client: { name: string; company: string | null } | null;
+  signature: { signerName: string; signatureImage: string; signedAt: string } | null;
 }

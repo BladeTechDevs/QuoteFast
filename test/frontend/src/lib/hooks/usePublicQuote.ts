@@ -45,3 +45,16 @@ export function useTrackPdfDownload() {
     },
   });
 }
+
+export interface SignQuotePayload {
+  signerName: string;
+  signatureImage?: string;
+}
+
+export function useSignQuote(publicId: string) {
+  return useMutation({
+    mutationFn: async (payload: SignQuotePayload) => {
+      await publicClient.post(`/public/quotes/${publicId}/sign`, payload);
+    },
+  });
+}

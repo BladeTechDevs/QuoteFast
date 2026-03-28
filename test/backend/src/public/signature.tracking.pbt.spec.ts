@@ -116,7 +116,7 @@ describe('SignatureService — Tracking Events Property-Based Tests', () => {
   /**
    * Feature: electronic-signature, Property 8: Tracking Event Created with Complete Metadata
    * 
-   * For any successful signature, a QUOTE_SIGNED tracking event should be created with the
+   * For any successful signature, a QUOTE_ACCEPTED tracking event should be created with the
    * correct quoteId and metadata containing the IP address, user-agent, and signer name.
    * 
    * **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5**
@@ -156,7 +156,7 @@ describe('SignatureService — Tracking Events Property-Based Tests', () => {
 
         const signedQuote = {
           ...mockQuote,
-          status: QuoteStatus.SIGNED,
+          status: QuoteStatus.ACCEPTED,
           signedAt: now,
         };
 
@@ -202,8 +202,8 @@ describe('SignatureService — Tracking Events Property-Based Tests', () => {
 
         const eventCall = trackingService.registerEvent.mock.calls[0][0];
 
-        // Verify event type is QUOTE_SIGNED
-        const eventTypeCorrect = eventCall.eventType === TrackingEventType.QUOTE_SIGNED;
+        // Verify event type is QUOTE_ACCEPTED
+        const eventTypeCorrect = eventCall.eventType === TrackingEventType.QUOTE_ACCEPTED;
 
         // Verify quoteId is correct
         const quoteIdCorrect = eventCall.quoteId === mockQuote.id;
@@ -279,7 +279,7 @@ describe('SignatureService — Tracking Events Property-Based Tests', () => {
 
           const signedQuote = {
             ...mockQuote,
-            status: QuoteStatus.SIGNED,
+            status: QuoteStatus.ACCEPTED,
             signedAt: now,
           };
 
@@ -323,7 +323,7 @@ describe('SignatureService — Tracking Events Property-Based Tests', () => {
           const eventCall = trackingService.registerEvent.mock.calls[0][0];
 
           // Verify event type and quoteId
-          const eventTypeCorrect = eventCall.eventType === TrackingEventType.QUOTE_SIGNED;
+          const eventTypeCorrect = eventCall.eventType === TrackingEventType.QUOTE_ACCEPTED;
           const quoteIdCorrect = eventCall.quoteId === mockQuote.id;
 
           // Verify optional fields are undefined (not provided)
@@ -349,3 +349,4 @@ describe('SignatureService — Tracking Events Property-Based Tests', () => {
     );
   });
 });
+

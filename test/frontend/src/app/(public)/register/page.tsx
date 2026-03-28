@@ -16,7 +16,8 @@ const registerSchema = z
     email: z.string().email('Email inválido'),
     password: z
       .string()
-      .min(8, 'La contraseña debe tener al menos 8 caracteres'),
+      .min(8, 'La contraseña debe tener al menos 8 caracteres')
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Debe contener mayúscula, minúscula y un número'),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {

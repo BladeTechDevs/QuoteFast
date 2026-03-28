@@ -29,6 +29,7 @@ export class PublicQuotesService {
         items: { orderBy: { order: 'asc' } },
         client: { select: { name: true, company: true } },
         user: { select: { name: true, company: true } },
+        signature: { select: { signerName: true, signatureImage: true, signedAt: true } },
       },
     });
 
@@ -50,6 +51,7 @@ export class PublicQuotesService {
         items: { orderBy: { order: 'asc' } },
         client: { select: { name: true, company: true } },
         user: { select: { name: true, company: true } },
+        signature: { select: { signerName: true, signatureImage: true, signedAt: true } },
       },
     });
 
@@ -57,13 +59,13 @@ export class PublicQuotesService {
       throw new NotFoundException('Quote not found');
     }
 
-    // Register tracking event (handles viewedAt + status update internally)
-    await this.trackingService.registerEvent({
+    // Register tracking event fire-and-forget — don't block the response
+    this.trackingService.registerEvent({
       quoteId: quote.id,
       eventType: TrackingEventType.QUOTE_OPENED,
       ipAddress,
       userAgent,
-    });
+    }).catch(() => { /* ignore tracking errors */ });
 
     return this.toPublicShape(quote);
   }
@@ -79,8 +81,11 @@ export class PublicQuotesService {
       description: string | null;
       quantity: import('@prisma/client').Prisma.Decimal;
       unitPrice: import('@prisma/client').Prisma.Decimal;
+      discount: import('@prisma/client').Prisma.Decimal;
+      taxRate: import('@prisma/client').Prisma.Decimal;
       total: import('@prisma/client').Prisma.Decimal;
       order: number;
+      // internalCost is intentionally excluded from the public shape
     }>;
     subtotal: import('@prisma/client').Prisma.Decimal;
     taxRate: import('@prisma/client').Prisma.Decimal;
@@ -93,6 +98,7 @@ export class PublicQuotesService {
     pdfUrl: string | null;
     user: { name: string; company: string | null };
     client: { name: string; company: string | null } | null;
+    signature?: { signerName: string; signatureImage: string; signedAt: Date } | null;
   }) {
     return {
       publicId: quote.publicId,
@@ -105,8 +111,11 @@ export class PublicQuotesService {
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        discount: item.discount,
+        taxRate: item.taxRate,
         total: item.total,
         order: item.order,
+        // internalCost is deliberately omitted — never exposed to public clients
       })),
       subtotal: quote.subtotal,
       taxRate: quote.taxRate,
@@ -120,6 +129,13 @@ export class PublicQuotesService {
       issuer: { name: quote.user.name, company: quote.user.company },
       client: quote.client
         ? { name: quote.client.name, company: quote.client.company }
+        : null,
+      signature: quote.signature
+        ? {
+            signerName: quote.signature.signerName,
+            signatureImage: quote.signature.signatureImage,
+            signedAt: quote.signature.signedAt,
+          }
         : null,
     };
   }

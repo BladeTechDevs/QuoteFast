@@ -31,7 +31,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Add aria-label="Canvas de firma" for accessibility
     - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 10.1, 10.2, 12.1_
 
-  - [ ] 2.2 Write property test for continuous stroke rendering
+  - [x] 2.2 Write property test for continuous stroke rendering
     - **Property 2: Continuous stroke rendering**
     - **Validates: Requirements 2.2**
     - Create test/frontend/src/components/ui/SignatureCanvas.pbt.test.tsx
@@ -40,7 +40,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 2: Continuous stroke rendering`
     - _Requirements: 2.2_
 
-  - [ ] 2.3 Write property test for clear functionality
+  - [x] 2.3 Write property test for clear functionality
     - **Property 3: Clear erases all content**
     - **Validates: Requirements 3.1**
     - Generate arbitrary canvas states with drawn content
@@ -48,7 +48,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 3: Clear erases all content`
     - _Requirements: 3.1_
 
-  - [ ] 2.4 Write property test for canvas to base64 conversion
+  - [x] 2.4 Write property test for canvas to base64 conversion
     - **Property 9: Canvas to base64 conversion format**
     - **Validates: Requirements 5.1**
     - Generate arbitrary non-empty canvas content
@@ -57,7 +57,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 9: Canvas to base64 conversion format`
     - _Requirements: 5.1_
 
-  - [ ] 2.5 Write unit tests for SignatureCanvas
+  - [x] 2.5 Write unit tests for SignatureCanvas
     - Test canvas renders with correct dimensions
     - Test placeholder text displays when empty
     - Test mouse events trigger drawing
@@ -66,8 +66,8 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Test aria-label attribute is present
     - _Requirements: 1.6, 1.7, 2.1, 2.3, 2.4, 2.5, 3.1, 3.2, 12.1_
 
-- [ ] 3. Create API integration hook
-  - [ ] 3.1 Implement useSignQuote hook
+- [x] 3. Create API integration hook
+  - [x] 3.1 Implement useSignQuote hook
     - Create test/frontend/src/lib/hooks/useSignQuote.ts
     - Define SignQuotePayload interface (signerName, signatureImage)
     - Implement useMutation hook with TanStack Query
@@ -75,14 +75,14 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Use publicClient from @/lib/api for API calls
     - _Requirements: 5.3, 11.3_
 
-  - [ ] 3.2 Write unit tests for useSignQuote hook
+  - [x] 3.2 Write unit tests for useSignQuote hook
     - Test successful API submission
     - Test error handling for different HTTP status codes
     - Test mutation state management (loading, error, success)
     - _Requirements: 5.3, 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 4. Implement SignatureForm component
-  - [ ] 4.1 Create SignatureForm with validation schema
+- [-] 4. Implement SignatureForm component
+  - [x] 4.1 Create SignatureForm with validation schema
     - Create test/frontend/src/components/ui/SignatureForm.tsx
     - Define SignatureFormProps interface (publicId, onSuccess)
     - Define Zod validation schema with signerName and signatureImage fields
@@ -91,7 +91,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Set up React Hook Form with zodResolver
     - _Requirements: 4.1, 4.2, 4.3, 5.2, 11.1, 11.2, 11.4, 11.5_
 
-  - [ ] 4.2 Build SignatureForm UI structure
+  - [x] 4.2 Build SignatureForm UI structure
     - Render form with name input field labeled "Nombre completo"
     - Integrate SignatureCanvas component
     - Implement clear button labeled "Limpiar" with aria-label="Limpiar firma"
@@ -100,7 +100,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Style with Tailwind CSS matching existing design patterns
     - _Requirements: 1.3, 3.3, 3.4, 5.6, 10.3, 10.4, 10.5, 10.6, 12.2, 12.5_
 
-  - [ ] 4.3 Implement form submission logic
+  - [x] 4.3 Implement form submission logic
     - Handle form submit to convert canvas to base64 PNG
     - Call useSignQuote mutation with form data
     - Display loading indicator during submission
@@ -109,7 +109,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Call onSuccess callback when submission succeeds
     - _Requirements: 5.1, 5.3, 5.4, 5.5, 12.3_
 
-  - [ ] 4.4 Implement validation error display
+  - [x] 4.4 Implement validation error display
     - Display "Por favor dibuje su firma" for empty canvas
     - Display "Por favor ingrese su nombre" for empty name
     - Display "El nombre no puede exceder 255 caracteres" for long name
@@ -119,7 +119,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Clear errors when user corrects input
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.2, 12.4_
 
-  - [ ] 4.5 Implement API error handling
+  - [x] 4.5 Implement API error handling
     - Map 400 errors to API error message
     - Map 404 errors to "Cotización no encontrada"
     - Map 409 errors to "Esta cotización ya no puede ser firmada"
@@ -129,7 +129,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Preserve form data (signature and name) after error
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 
-  - [ ] 4.6 Write property test for empty canvas validation
+  - [x] 4.6 Write property test for empty canvas validation
     - **Property 4: Empty canvas validation**
     - **Validates: Requirements 4.1**
     - Generate form submissions with empty or null signatureImage
@@ -137,7 +137,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 4: Empty canvas validation`
     - _Requirements: 4.1_
 
-  - [ ] 4.7 Write property test for empty name validation
+  - [x] 4.7 Write property test for empty name validation
     - **Property 5: Empty name validation**
     - **Validates: Requirements 4.2**
     - Generate form submissions with empty or whitespace-only signerName
@@ -145,7 +145,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 5: Empty name validation`
     - _Requirements: 4.2_
 
-  - [ ] 4.8 Write property test for name length validation
+  - [x] 4.8 Write property test for name length validation
     - **Property 6: Name length validation**
     - **Validates: Requirements 4.3**
     - Generate signerName strings exceeding 255 characters
@@ -153,7 +153,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 6: Name length validation`
     - _Requirements: 4.3_
 
-  - [ ] 4.9 Write property test for submission prevention with errors
+  - [x] 4.9 Write property test for submission prevention with errors
     - **Property 7: Submission prevention with validation errors**
     - **Validates: Requirements 4.4**
     - Generate form states with various validation errors
@@ -161,7 +161,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 7: Submission prevention with validation errors`
     - _Requirements: 4.4_
 
-  - [ ] 4.10 Write property test for error clearing
+  - [x] 4.10 Write property test for error clearing
     - **Property 8: Error clearing on input correction**
     - **Validates: Requirements 4.5**
     - Generate form fields with validation errors
@@ -170,7 +170,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 8: Error clearing on input correction`
     - _Requirements: 4.5_
 
-  - [ ] 4.11 Write property test for PNG data URI validation
+  - [x] 4.11 Write property test for PNG data URI validation
     - **Property 13: PNG data URI format validation**
     - **Validates: Requirements 11.5**
     - Generate signatureImage values not starting with "data:image/png;base64,"
@@ -178,7 +178,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 13: PNG data URI format validation`
     - _Requirements: 11.5_
 
-  - [ ] 4.12 Write property test for API submission with valid data
+  - [x] 4.12 Write property test for API submission with valid data
     - **Property 10: API submission with valid data**
     - **Validates: Requirements 5.3**
     - Generate valid form data (signerName and signatureImage)
@@ -186,7 +186,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 10: API submission with valid data`
     - _Requirements: 5.3_
 
-  - [ ] 4.13 Write property test for button re-enabling after error
+  - [x] 4.13 Write property test for button re-enabling after error
     - **Property 11: Button re-enabling after error**
     - **Validates: Requirements 7.6**
     - Generate various API error responses
@@ -194,7 +194,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 11: Button re-enabling after error`
     - _Requirements: 7.6_
 
-  - [ ] 4.14 Write property test for form data preservation after error
+  - [x] 4.14 Write property test for form data preservation after error
     - **Property 12: Form data preservation after error**
     - **Validates: Requirements 7.7**
     - Generate API error responses with pre-submission form data
@@ -202,7 +202,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 12: Form data preservation after error`
     - _Requirements: 7.7_
 
-  - [ ] 4.15 Write property test for error message accessibility
+  - [x] 4.15 Write property test for error message accessibility
     - **Property 14: Error message accessibility association**
     - **Validates: Requirements 12.4**
     - Generate form fields with validation errors
@@ -210,7 +210,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 14: Error message accessibility association`
     - _Requirements: 12.4_
 
-  - [ ] 4.16 Write unit tests for SignatureForm
+  - [x] 4.16 Write unit tests for SignatureForm
     - Test form renders all required elements
     - Test buttons have correct labels
     - Test loading state displays correctly
@@ -223,8 +223,8 @@ The implementation follows established patterns in the codebase: React Hook Form
 - [ ] 5. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Integrate SignatureForm into public quote page
-  - [ ] 6.1 Add SignatureForm to PublicQuotePage component
+- [x] 6. Integrate SignatureForm into public quote page
+  - [x] 6.1 Add SignatureForm to PublicQuotePage component
     - Import SignatureForm component
     - Import useSignQuote hook
     - Add state for signature success (signatureDone)
@@ -234,27 +234,27 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Implement onSuccess handler to set signatureDone state and update UI
     - _Requirements: 1.1, 1.2, 9.1, 9.4_
 
-  - [ ] 6.2 Implement success state display
+  - [x] 6.2 Implement success state display
     - Display success message "✓ Has firmado esta cotización. El emisor ha sido notificado." when signature succeeds
     - Hide SignatureForm after successful signature
     - Update quote status display to SIGNED
     - Hide accept/reject buttons after successful signature
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 6.3 Implement SIGNED status display
+  - [x] 6.3 Implement SIGNED status display
     - Display status badge as "SIGNED" when quote status is SIGNED
     - Display message "Esta cotización ya ha sido firmada" for SIGNED quotes
     - Hide SignatureForm for SIGNED quotes
     - Hide accept/reject buttons for SIGNED quotes
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-  - [ ] 6.4 Handle interaction with accept/reject actions
+  - [x] 6.4 Handle interaction with accept/reject actions
     - Hide SignatureForm when user accepts quote
     - Hide SignatureForm when user rejects quote
     - Ensure both SignatureForm and accept/reject buttons display for SENT/VIEWED quotes
     - _Requirements: 9.1, 9.2, 9.3_
 
-  - [ ] 6.5 Write property test for form visibility logic
+  - [x] 6.5 Write property test for form visibility logic
     - **Property 1: Form visibility for signable states**
     - **Validates: Requirements 1.1**
     - Generate quote objects with all possible statuses
@@ -262,7 +262,7 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Tag: `// Feature: signature-ui-frontend, Property 1: Form visibility for signable states`
     - _Requirements: 1.1_
 
-  - [ ] 6.6 Write unit tests for PublicQuotePage integration
+  - [x] 6.6 Write unit tests for PublicQuotePage integration
     - Test SignatureForm renders for SENT status
     - Test SignatureForm renders for VIEWED status
     - Test SignatureForm does not render for ACCEPTED status
@@ -278,13 +278,13 @@ The implementation follows established patterns in the codebase: React Hook Form
     - Test SignatureForm and accept/reject buttons coexist for SENT/VIEWED
     - _Requirements: 1.1, 1.2, 6.1, 6.2, 6.3, 6.4, 8.1, 8.2, 8.3, 8.4, 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 7. Update StatusBadge component to support SIGNED status
+- [x] 7. Update StatusBadge component to support SIGNED status
   - Add SIGNED status case to StatusBadge component
   - Style SIGNED badge appropriately (e.g., purple or blue color)
   - Add Spanish label "FIRMADO" for SIGNED status
   - _Requirements: 8.1_
 
-- [ ] 8. Final checkpoint - Ensure all tests pass
+- [x] 8. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

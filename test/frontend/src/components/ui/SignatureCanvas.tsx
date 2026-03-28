@@ -20,8 +20,15 @@ export interface SignatureCanvasRef {
 export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasProps>(
   ({ onChange, onClear, width, height, className }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [isDrawing, setIsDrawing] = useState(false);
+    // Use refs for drawing state to avoid stale closures in event handlers
+    const isDrawingRef = useRef(false);
+    const isEmptyRef = useRef(true);
     const [isEmpty, setIsEmpty] = useState(true);
+    // Keep latest callbacks in refs to avoid re-registering listeners
+    const onChangeRef = useRef(onChange);
+    const onClearRef = useRef(onClear);
+    useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+    useEffect(() => { onClearRef.current = onClear; }, [onClear]);
 
     // Get pointer position from mouse or touch event
     const getPointerPosition = (e: MouseEvent | TouchEvent): { x: number; y: number } | null => {
@@ -48,49 +55,6 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
       };
     };
 
-    // Start drawing
-    const startDrawing = (e: MouseEvent | TouchEvent) => {
-      const pos = getPointerPosition(e);
-      if (!pos) return;
-
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (!ctx) return;
-
-      setIsDrawing(true);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    };
-
-    // Draw stroke
-    const draw = (e: MouseEvent | TouchEvent) => {
-      if (!isDrawing) return;
-
-      const pos = getPointerPosition(e);
-      if (!pos) return;
-
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (!ctx) return;
-
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    };
-
-    // Stop drawing
-    const stopDrawing = () => {
-      if (!isDrawing) return;
-
-      setIsDrawing(false);
-      setIsEmpty(false);
-
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const dataUrl = canvas.toDataURL('image/png');
-        onChange(dataUrl);
-      }
-    };
-
     // Clear canvas
     const clear = () => {
       const canvas = canvasRef.current;
@@ -98,9 +62,10 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
       if (!ctx || !canvas) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      isEmptyRef.current = true;
       setIsEmpty(true);
-      onChange(null);
-      onClear?.();
+      onChangeRef.current(null);
+      onClearRef.current?.();
     };
 
     // Convert to data URL
@@ -112,7 +77,7 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
 
     // Check if canvas is empty
     const checkIsEmpty = (): boolean => {
-      return isEmpty;
+      return isEmptyRef.current;
     };
 
     // Expose methods via ref
@@ -122,7 +87,7 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
       isEmpty: checkIsEmpty,
     }));
 
-    // Set up canvas context and event listeners
+    // Set up canvas context and event listeners (only once on mount)
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -135,6 +100,38 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+
+      // Start drawing
+      const startDrawing = (e: MouseEvent | TouchEvent) => {
+        const pos = getPointerPosition(e);
+        if (!pos) return;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        isDrawingRef.current = true;
+        context.beginPath();
+        context.moveTo(pos.x, pos.y);
+      };
+
+      // Draw stroke
+      const draw = (e: MouseEvent | TouchEvent) => {
+        if (!isDrawingRef.current) return;
+        const pos = getPointerPosition(e);
+        if (!pos) return;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        context.lineTo(pos.x, pos.y);
+        context.stroke();
+      };
+
+      // Stop drawing
+      const stopDrawing = () => {
+        if (!isDrawingRef.current) return;
+        isDrawingRef.current = false;
+        isEmptyRef.current = false;
+        setIsEmpty(false);
+        const dataUrl = canvas.toDataURL('image/png');
+        onChangeRef.current(dataUrl);
+      };
 
       // Mouse event handlers
       const handleMouseDown = (e: MouseEvent) => startDrawing(e);
@@ -175,7 +172,7 @@ export const SignatureCanvas = forwardRef<SignatureCanvasRef, SignatureCanvasPro
         canvas.removeEventListener('touchmove', handleTouchMove);
         canvas.removeEventListener('touchend', handleTouchEnd);
       };
-    }, [isDrawing]);
+    }, []); // Empty deps - register once on mount
 
     // Determine responsive dimensions
     const canvasWidth = width || (typeof window !== 'undefined' && window.innerWidth < 640 ? 300 : 500);

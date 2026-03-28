@@ -7,11 +7,23 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PrismaService } from '../prisma/prisma.service';
+import { Plan } from '@prisma/client';
+
+const PLAN_LIMITS: Record<Plan, number | null> = {
+  FREE: 5,
+  PRO: null,
+  TEAM: null,
+  BUSINESS: null,
+};
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -49,5 +61,33 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   me(@CurrentUser() user: unknown) {
     return user;
+  }
+
+  @Get('usage')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get plan usage for current month' })
+  async usage(@CurrentUser() user: { id: string; plan: Plan }) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const quotesThisMonth = await this.prisma.quote.count({
+      where: {
+        userId: user.id,
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+      },
+    });
+
+    const limit = PLAN_LIMITS[user.plan];
+
+    return {
+      plan: user.plan,
+      quotesThisMonth,
+      quotesLimit: limit,
+      quotesRemaining: limit !== null ? Math.max(0, limit - quotesThisMonth) : null,
+      periodStart: startOfMonth.toISOString(),
+      periodEnd: endOfMonth.toISOString(),
+    };
   }
 }

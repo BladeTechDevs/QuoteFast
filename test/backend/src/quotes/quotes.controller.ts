@@ -62,6 +62,11 @@ export class QuotesController {
     return this.quotesService.duplicate(req.user.id, id);
   }
 
+  @Post(':id/recalculate')
+  recalculate(@Request() req, @Param('id') id: string) {
+    return this.quotesService.recalculate(req.user.id, id);
+  }
+
   @Post(':id/send')
   @HttpCode(HttpStatus.ACCEPTED)
   send(@Request() req, @Param('id') id: string) {

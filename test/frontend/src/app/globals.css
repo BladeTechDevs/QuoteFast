@@ -7,3 +7,20 @@
     @apply bg-gray-50 text-gray-900 antialiased;
   }
 }
+
+@media print {
+  /* Hide action buttons, footer branding, and nav when printing */
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  /* Remove shadows and borders for cleaner print */
+  .print-clean {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+}

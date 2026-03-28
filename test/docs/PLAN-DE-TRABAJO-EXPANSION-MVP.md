@@ -35,20 +35,25 @@ Permitir que los clientes firmen cotizaciones digitalmente desde la vista públi
 - Proteger contra firmas duplicadas
 
 ### 📦 Entregables
-- Endpoint POST `/public/quotes/:publicId/sign`
-- Modelo de datos para Signature
-- Validación de estados permitidos (SENT, VIEWED)
-- Evento QUOTE_SIGNED
-- Tests unitarios y de integración
+- ✅ Endpoint POST `/public/quotes/:publicId/sign`
+- ✅ Modelo de datos para Signature
+- ✅ Validación de estados permitidos (SENT, VIEWED)
+- ✅ Evento de tracking al firmar
+- ✅ Componentes frontend: `SignatureCanvas`, `SignatureForm`
+- ✅ Hook `useSignQuote` para integración con API
+- ✅ Integración en página pública de cotización
+- ✅ Tests unitarios y de propiedades (PBT)
+
+> Nota de implementación: `SIGNED` no se agregó como estado independiente. Al firmar, la cotización queda en `ACCEPTED` y la firma se almacena en el modelo `Signature` relacionado.
 
 ### 🔗 Dependencias
 - Ninguna (módulo independiente)
 
 ### ✅ Criterios de Aceptación
-- Cliente puede firmar desde vista pública
-- Solo una firma activa por cotización
-- Tiempo de respuesta < 500ms
-- Protección contra race conditions
+- ✅ Cliente puede firmar desde vista pública (firma dibujada es opcional)
+- ✅ Solo una firma activa por cotización
+- ✅ Tiempo de respuesta < 500ms
+- ✅ Protección contra race conditions
 
 ---
 
@@ -64,20 +69,23 @@ Mejorar el sistema de cálculo de cotizaciones para soportar descuentos por item
 - Recálculo automático de totales
 
 ### 📦 Entregables
-- Actualización del modelo QuoteItem
-- Lógica de cálculo mejorada
-- Endpoint para recalcular totales
-- Migración de datos existentes
-- Tests de propiedades (PBT)
+- ✅ Migración de base de datos: campos `discount`, `taxRate`, `internalCost` en `QuoteItem`
+- ✅ Lógica de cálculo mejorada (`calculateItemTotal`, `calculateQuoteTotals`)
+- ✅ Endpoint `POST /quotes/:id/recalculate`
+- ✅ DTOs actualizados (`CreateQuoteItemDto`, `UpdateQuoteItemDto`)
+- ✅ `internalCost` excluido de la API pública
+- ✅ Frontend: nuevas columnas en `ItemRow` (Descuento, Imp. %, Costo interno)
+- ✅ Frontend: tipos actualizados (`QuoteItem`, `PublicQuoteItem`)
+- ✅ Tests de propiedades (PBT) — backend y frontend
 
 ### 🔗 Dependencias
 - Ninguna (mejora del core existente)
 
 ### ✅ Criterios de Aceptación
-- Descuentos y taxes se aplican correctamente
-- Totales se recalculan automáticamente
-- Márgenes internos no son visibles en vista pública
-- Backward compatibility con cotizaciones existentes
+- ✅ Descuentos y taxes se aplican correctamente
+- ✅ Totales se recalculan automáticamente
+- ✅ Márgenes internos no son visibles en vista pública
+- ✅ Backward compatibility con cotizaciones existentes
 
 ---
 
@@ -392,14 +400,15 @@ Mes 5: Testing integral, optimización, documentación
 ## 🎯 PRÓXIMOS PASOS
 
 1. ✅ Revisar y aprobar este plan de trabajo
-2. 🔜 Comenzar con **Etapa 1: Firma Electrónica**
-3. 🔜 Crear spec de Kiro para Etapa 1
-4. 🔜 Implementar y testear Etapa 1
-5. 🔜 Review y deploy de Etapa 1
-6. 🔜 Continuar con siguiente etapa
+2. ✅ **Etapa 1: Firma Electrónica** — completada
+3. ✅ **Etapa 2: Calculadora Avanzada** — completada
+4. 🔜 Comenzar con **Etapa 3: Customización y Branding**
+5. 🔜 Crear spec de Kiro para Etapa 3
+6. 🔜 Implementar y testear Etapa 3
+7. 🔜 Review y deploy de Etapa 3
 
 ---
 
-**Última actualización:** 2026-03-25
-**Versión:** 1.0
-**Estado:** Pendiente de aprobación
+**Última actualización:** 2026-03-28
+**Versión:** 1.2
+**Estado:** En progreso — Etapas 1 y 2 completadas

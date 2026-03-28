@@ -87,7 +87,7 @@ export class PublicController {
       type: 'object',
       properties: {
         id: { type: 'string', format: 'uuid', description: 'Signature ID' },
-        quoteStatus: { type: 'string', enum: ['SIGNED'], description: 'Updated quote status' },
+        quoteStatus: { type: 'string', enum: ['ACCEPTED'], description: 'Updated quote status' },
         signedAt: { type: 'string', format: 'date-time', description: 'Timestamp of signature' },
       },
     },

@@ -120,7 +120,7 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
    * 
    * For any quote that is signed multiple times with different signature data,
    * the system should maintain only one signature record containing the most recent
-   * signature data, and the quote status should remain SIGNED.
+   * signature data, and the quote status should remain ACCEPTED.
    * 
    * **Validates: Requirements 3.7, 10.1, 10.2, 10.3**
    */
@@ -193,7 +193,7 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
 
             const signedQuote = {
               ...mockQuote,
-              status: QuoteStatus.SIGNED,
+              status: QuoteStatus.ACCEPTED,
               signedAt: now,
             };
 
@@ -224,7 +224,7 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
           const correctCallCount = transactionCallCount === signatureDataArray.length;
 
           // Verify the last result has the correct status
-          const statusRemainsSigned = lastResult.quoteStatus === QuoteStatus.SIGNED;
+          const statusRemainsAccepted = lastResult.quoteStatus === QuoteStatus.ACCEPTED;
 
           // Verify that the most recent signature contains the last data
           const lastData = signatureDataArray[signatureDataArray.length - 1];
@@ -239,7 +239,7 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
 
           return (
             correctCallCount &&
-            statusRemainsSigned &&
+            statusRemainsAccepted &&
             nameMatches &&
             imageMatches &&
             ipMatches &&
@@ -257,7 +257,7 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
    * 
    * When a quote is signed multiple times with the exact same signature data,
    * the system should still maintain only one signature record and the quote
-   * status should remain SIGNED.
+   * status should remain ACCEPTED.
    * 
    * **Validates: Requirements 3.7, 10.1, 10.2, 10.3**
    */
@@ -319,7 +319,7 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
 
             const signedQuote = {
               ...mockQuote,
-              status: QuoteStatus.SIGNED,
+              status: QuoteStatus.ACCEPTED,
               signedAt: now,
             };
 
@@ -350,15 +350,16 @@ describe('SignatureService — Idempotence Property-Based Tests', () => {
           const correctCallCount = transactionCallCount === repeatCount;
 
           // Verify the status remains SIGNED
-          const statusRemainsSigned = lastResult.quoteStatus === QuoteStatus.SIGNED;
+          const statusRemainsAccepted = lastResult.quoteStatus === QuoteStatus.ACCEPTED;
 
           // Verify the signature ID is consistent (same record)
           const hasConsistentId = lastResult.id === 'signature-uuid-2';
 
-          return correctCallCount && statusRemainsSigned && hasConsistentId;
+          return correctCallCount && statusRemainsAccepted && hasConsistentId;
         },
       ),
       { numRuns: 100 },
     );
   });
 });
+

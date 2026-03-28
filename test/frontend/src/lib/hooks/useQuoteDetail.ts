@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import type { QuoteDetail, QuoteItem } from '@/lib/types';
 
+const POLLING_STATES = new Set(['SENT', 'VIEWED']);
+
 export function useQuoteDetail(id: string) {
   return useQuery<QuoteDetail>({
     queryKey: ['quote', id],
@@ -10,6 +12,10 @@ export function useQuoteDetail(id: string) {
       return data;
     },
     enabled: !!id && id !== 'new',
+    refetchInterval: (query) => {
+      const status = (query.state.data as QuoteDetail | undefined)?.status;
+      return status && POLLING_STATES.has(status) ? 10_000 : false;
+    },
   });
 }
 
@@ -31,6 +37,7 @@ export function useCreateQuote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['plan-usage'] });
     },
   });
 }

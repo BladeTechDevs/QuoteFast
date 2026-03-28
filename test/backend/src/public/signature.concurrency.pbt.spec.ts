@@ -192,7 +192,7 @@ describe('SignatureService — Concurrency Property-Based Tests', () => {
             if (transactionCompleted) {
               return Promise.resolve({
                 ...mockQuote,
-                status: QuoteStatus.SIGNED,
+                status: QuoteStatus.ACCEPTED,
                 signedAt: new Date(),
               });
             }
@@ -226,7 +226,7 @@ describe('SignatureService — Concurrency Property-Based Tests', () => {
 
             const signedQuote = {
               ...mockQuote,
-              status: QuoteStatus.SIGNED,
+              status: QuoteStatus.ACCEPTED,
               signedAt: now,
             };
 
@@ -382,7 +382,7 @@ describe('SignatureService — Concurrency Property-Based Tests', () => {
 
             const signedQuote = {
               ...mockQuote,
-              status: QuoteStatus.SIGNED,
+              status: QuoteStatus.ACCEPTED,
               signedAt: now,
             };
 
@@ -423,3 +423,4 @@ describe('SignatureService — Concurrency Property-Based Tests', () => {
     );
   });
 });
+

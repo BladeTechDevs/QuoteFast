@@ -192,7 +192,7 @@ describe('SignatureService', () => {
   describe('signQuote - happy path', () => {
     it('should successfully sign a SENT quote', async () => {
       const sentQuote = { ...mockQuote, status: QuoteStatus.SENT };
-      const signedQuote = { ...sentQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...sentQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
 
       (prisma.quote.findUnique as jest.Mock).mockResolvedValue(sentQuote);
       (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
@@ -217,7 +217,7 @@ describe('SignatureService', () => {
 
       expect(result).toEqual({
         id: mockSignature.id,
-        quoteStatus: QuoteStatus.SIGNED,
+        quoteStatus: QuoteStatus.ACCEPTED,
         signedAt: signedQuote.signedAt,
       });
       expect(prisma.quote.findUnique).toHaveBeenCalledWith({
@@ -225,7 +225,7 @@ describe('SignatureService', () => {
       });
       expect(trackingService.registerEvent).toHaveBeenCalledWith({
         quoteId: sentQuote.id,
-        eventType: TrackingEventType.QUOTE_SIGNED,
+        eventType: TrackingEventType.QUOTE_ACCEPTED,
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla/5.0',
         metadata: {
@@ -236,7 +236,7 @@ describe('SignatureService', () => {
 
     it('should successfully sign a VIEWED quote', async () => {
       const viewedQuote = { ...mockQuote, status: QuoteStatus.VIEWED };
-      const signedQuote = { ...viewedQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...viewedQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
 
       (prisma.quote.findUnique as jest.Mock).mockResolvedValue(viewedQuote);
       (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
@@ -257,7 +257,7 @@ describe('SignatureService', () => {
         signatureImage: VALID_JPEG_IMAGE,
       });
 
-      expect(result.quoteStatus).toBe(QuoteStatus.SIGNED);
+      expect(result.quoteStatus).toBe(QuoteStatus.ACCEPTED);
       expect(result.signedAt).toBeDefined();
     });
   });
@@ -325,11 +325,11 @@ describe('SignatureService', () => {
   });
 
   describe('signQuote - idempotence', () => {
-    it('should reject signing an already SIGNED quote', async () => {
+    it('should reject signing an already ACCEPTED quote', async () => {
       // Note: The design document specifies SIGNED → SIGNED should be valid (idempotent),
       // but the current implementation rejects it. This test validates the actual behavior.
       // Requirements 3.7, 10.1, 10.2, 10.3 specify idempotence, which may need implementation update.
-      const signedQuote = { ...mockQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...mockQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
       (prisma.quote.findUnique as jest.Mock).mockResolvedValue(signedQuote);
 
       await expect(
@@ -409,7 +409,7 @@ describe('SignatureService', () => {
   describe('signQuote - integration', () => {
     it('should call PrismaService.signature.upsert with correct data', async () => {
       const sentQuote = { ...mockQuote, status: QuoteStatus.SENT };
-      const signedQuote = { ...sentQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...sentQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
       const mockUpsert = jest.fn().mockResolvedValue(mockSignature);
       const mockUpdate = jest.fn().mockResolvedValue(signedQuote);
 
@@ -449,9 +449,9 @@ describe('SignatureService', () => {
       });
     });
 
-    it('should call PrismaService.quote.update with SIGNED status', async () => {
+    it('should call PrismaService.quote.update with ACCEPTED status', async () => {
       const sentQuote = { ...mockQuote, status: QuoteStatus.SENT };
-      const signedQuote = { ...sentQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...sentQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
       const mockUpsert = jest.fn().mockResolvedValue(mockSignature);
       const mockUpdate = jest.fn().mockResolvedValue(signedQuote);
 
@@ -473,15 +473,16 @@ describe('SignatureService', () => {
       expect(mockUpdate).toHaveBeenCalledWith({
         where: { id: sentQuote.id },
         data: {
-          status: QuoteStatus.SIGNED,
+          status: QuoteStatus.ACCEPTED,
           signedAt: expect.any(Date),
+          acceptedAt: expect.any(Date),
         },
       });
     });
 
     it('should call TrackingService.registerEvent with correct parameters', async () => {
       const sentQuote = { ...mockQuote, status: QuoteStatus.SENT };
-      const signedQuote = { ...sentQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...sentQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
 
       (prisma.quote.findUnique as jest.Mock).mockResolvedValue(sentQuote);
       (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
@@ -506,7 +507,7 @@ describe('SignatureService', () => {
 
       expect(trackingService.registerEvent).toHaveBeenCalledWith({
         quoteId: sentQuote.id,
-        eventType: TrackingEventType.QUOTE_SIGNED,
+        eventType: TrackingEventType.QUOTE_ACCEPTED,
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla/5.0',
         metadata: {
@@ -517,7 +518,7 @@ describe('SignatureService', () => {
 
     it('should handle optional ipAddress and userAgent', async () => {
       const sentQuote = { ...mockQuote, status: QuoteStatus.SENT };
-      const signedQuote = { ...sentQuote, status: QuoteStatus.SIGNED, signedAt: new Date() };
+      const signedQuote = { ...sentQuote, status: QuoteStatus.ACCEPTED, signedAt: new Date(), acceptedAt: new Date() };
       const mockUpsert = jest.fn().mockResolvedValue(mockSignature);
       const mockUpdate = jest.fn().mockResolvedValue(signedQuote);
 
@@ -556,7 +557,7 @@ describe('SignatureService', () => {
 
       expect(trackingService.registerEvent).toHaveBeenCalledWith({
         quoteId: sentQuote.id,
-        eventType: TrackingEventType.QUOTE_SIGNED,
+        eventType: TrackingEventType.QUOTE_ACCEPTED,
         ipAddress: undefined,
         userAgent: undefined,
         metadata: {
@@ -566,3 +567,4 @@ describe('SignatureService', () => {
     });
   });
 });
+

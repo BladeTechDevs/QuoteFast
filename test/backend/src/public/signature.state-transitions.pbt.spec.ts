@@ -33,7 +33,6 @@ const NON_SIGNABLE_STATUSES = [
   QuoteStatus.ACCEPTED,
   QuoteStatus.REJECTED,
   QuoteStatus.EXPIRED,
-  QuoteStatus.SIGNED,
 ];
 
 /**
@@ -149,14 +148,14 @@ describe('SignatureService — State Transitions Property-Based Tests', () => {
   });
 
   /**
-   * Feature: electronic-signature, Property 7: Successful Signing Transitions State to SIGNED
+   * Feature: electronic-signature, Property 7: Successful Signing Transitions State to ACCEPTED
    * 
    * For any quote in SENT or VIEWED status, successfully signing the quote should result
-   * in the quote status being SIGNED and the signedAt timestamp being set to a recent value.
+   * in the quote status being ACCEPTED and the signedAt timestamp being set to a recent value.
    * 
    * **Validates: Requirements 4.1, 4.2**
    */
-  it('P7: successful signing transitions state to SIGNED with timestamp', async () => {
+  it('P7: successful signing transitions state to ACCEPTED with timestamp', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom(...SIGNABLE_STATUSES),
@@ -196,8 +195,9 @@ describe('SignatureService — State Transitions Property-Based Tests', () => {
 
           const signedQuote = {
             ...mockQuote,
-            status: QuoteStatus.SIGNED,
+            status: QuoteStatus.ACCEPTED,
             signedAt: now,
+            acceptedAt: now,
           };
 
           const mockSignature = {
@@ -232,8 +232,8 @@ describe('SignatureService — State Transitions Property-Based Tests', () => {
             userAgent,
           });
 
-          // Verify the quote status transitioned to SIGNED
-          const statusCorrect = result.quoteStatus === QuoteStatus.SIGNED;
+          // Verify the quote status transitioned to ACCEPTED
+          const statusCorrect = result.quoteStatus === QuoteStatus.ACCEPTED;
 
           // Verify signedAt timestamp is set and recent (within last 5 seconds)
           const timestampSet = result.signedAt !== null && result.signedAt !== undefined;
@@ -245,7 +245,7 @@ describe('SignatureService — State Transitions Property-Based Tests', () => {
           const trackingCorrect =
             trackingCalled &&
             trackingService.registerEvent.mock.calls[0][0].eventType ===
-              TrackingEventType.QUOTE_SIGNED &&
+              TrackingEventType.QUOTE_ACCEPTED &&
             trackingService.registerEvent.mock.calls[0][0].quoteId === mockQuote.id;
 
           return statusCorrect && timestampSet && timestampRecent && trackingCorrect;

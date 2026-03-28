@@ -184,8 +184,9 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
 
         const signedQuote = {
           ...mockQuote,
-          status: QuoteStatus.SIGNED,
+          status: QuoteStatus.ACCEPTED,
           signedAt: now,
+          acceptedAt: now,
         };
 
         const mockSignature = {
@@ -232,8 +233,8 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
         // 3. Response should have a 'quoteStatus' field
         const hasQuoteStatus = 'quoteStatus' in response;
 
-        // 4. The 'quoteStatus' should be SIGNED
-        const statusIsSigned = response.quoteStatus === QuoteStatus.SIGNED;
+        // 4. The 'quoteStatus' should be ACCEPTED
+        const statusIsAccepted = response.quoteStatus === QuoteStatus.ACCEPTED;
 
         // 5. Response should have a 'signedAt' field
         const hasSignedAt = 'signedAt' in response;
@@ -248,7 +249,7 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
           hasId &&
           idIsValidUUID &&
           hasQuoteStatus &&
-          statusIsSigned &&
+          statusIsAccepted &&
           hasSignedAt &&
           signedAtIsDate &&
           signedAtIsRecent
@@ -305,8 +306,9 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
 
           const signedQuote = {
             ...mockQuote,
-            status: QuoteStatus.SIGNED,
-            signedAt: now,
+            status: QuoteStatus.ACCEPTED,
+          signedAt: now,
+          acceptedAt: now,
           };
 
           const mockSignature = {
@@ -344,7 +346,7 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
           const hasId = 'id' in response;
           const idIsValidUUID = typeof response.id === 'string' && isValidUUID(response.id);
           const hasQuoteStatus = 'quoteStatus' in response;
-          const statusIsSigned = response.quoteStatus === QuoteStatus.SIGNED;
+          const statusIsAccepted = response.quoteStatus === QuoteStatus.ACCEPTED;
           const hasSignedAt = 'signedAt' in response;
           const signedAtIsDate = response.signedAt instanceof Date;
           const signedAtIsRecent = signedAtIsDate && isRecentTimestamp(response.signedAt);
@@ -353,7 +355,7 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
             hasId &&
             idIsValidUUID &&
             hasQuoteStatus &&
-            statusIsSigned &&
+            statusIsAccepted &&
             hasSignedAt &&
             signedAtIsDate &&
             signedAtIsRecent
@@ -407,8 +409,9 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
 
         const signedQuote = {
           ...mockQuote,
-          status: QuoteStatus.SIGNED,
+          status: QuoteStatus.ACCEPTED,
           signedAt: now,
+          acceptedAt: now,
         };
 
         const mockSignature = {
@@ -456,6 +459,167 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
         return hasExactlyThreeFields && hasExpectedFields;
       }),
       { numRuns: 100 },
+    );
+  });
+});
+
+
+// ============================================================================
+// Feature: advanced-calculator — Property 5: internalCost excluded from public response
+// ============================================================================
+
+import { PublicQuotesService } from './public-quotes.service';
+import { TrackingService as _TrackingService } from '../tracking/tracking.service';
+import { SqsService } from '../quotes/sqs.service';
+
+/**
+ * Feature: advanced-calculator
+ *
+ * Property-based tests for the public quote response shape.
+ * Validates: Requirement 9.5 — internalCost must never appear in any public API response.
+ */
+
+/** Generator for arbitrary internalCost values (including edge cases) */
+const internalCostArb = fc.oneof(
+  fc.constant(0),
+  fc.float({ min: Math.fround(0.01), max: Math.fround(99999), noNaN: true }),
+  fc.constant(999999.99),
+);
+
+/** Generator for a single quote item with arbitrary internalCost */
+const quoteItemWithInternalCostArb = fc.record({
+  id: fc.uuid(),
+  name: fc.string({ minLength: 1, maxLength: 100 }),
+  description: fc.option(fc.string({ minLength: 1, maxLength: 255 }), { nil: null }),
+  quantity: fc.float({ min: Math.fround(1), max: Math.fround(100), noNaN: true }),
+  unitPrice: fc.float({ min: Math.fround(1), max: Math.fround(10000), noNaN: true }),
+  discount: fc.float({ min: Math.fround(0), max: Math.fround(100), noNaN: true }),
+  taxRate: fc.float({ min: Math.fround(0), max: Math.fround(100), noNaN: true }),
+  internalCost: internalCostArb,
+  total: fc.float({ min: Math.fround(0), max: Math.fround(100000), noNaN: true }),
+  order: fc.integer({ min: 0, max: 100 }),
+});
+
+/** Builds a minimal mock quote with the given items */
+function buildMockQuote(items: Array<Record<string, unknown>>) {
+  return {
+    publicId: 'pub-test-id',
+    title: 'Test Quote',
+    status: QuoteStatus.SENT,
+    currency: 'USD',
+    items: items.map((item) => ({
+      ...item,
+      quantity: { toNumber: () => item.quantity } as unknown as import('@prisma/client').Prisma.Decimal,
+      unitPrice: { toNumber: () => item.unitPrice } as unknown as import('@prisma/client').Prisma.Decimal,
+      discount: { toNumber: () => item.discount } as unknown as import('@prisma/client').Prisma.Decimal,
+      taxRate: { toNumber: () => item.taxRate } as unknown as import('@prisma/client').Prisma.Decimal,
+      internalCost: { toNumber: () => item.internalCost } as unknown as import('@prisma/client').Prisma.Decimal,
+      total: { toNumber: () => item.total } as unknown as import('@prisma/client').Prisma.Decimal,
+    })),
+    subtotal: { toNumber: () => 0 } as unknown as import('@prisma/client').Prisma.Decimal,
+    taxRate: { toNumber: () => 0 } as unknown as import('@prisma/client').Prisma.Decimal,
+    taxAmount: { toNumber: () => 0 } as unknown as import('@prisma/client').Prisma.Decimal,
+    discount: { toNumber: () => 0 } as unknown as import('@prisma/client').Prisma.Decimal,
+    total: { toNumber: () => 0 } as unknown as import('@prisma/client').Prisma.Decimal,
+    notes: null,
+    terms: null,
+    validUntil: null,
+    pdfUrl: null,
+    user: { name: 'Test User', company: null },
+    client: null,
+    signature: null,
+  };
+}
+
+describe('PublicQuotesService — internalCost exclusion (advanced-calculator PBT)', () => {
+  let publicQuotesService: PublicQuotesService;
+  let prisma: jest.Mocked<PrismaService>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PublicQuotesService,
+        {
+          provide: PrismaService,
+          useValue: {
+            quote: { findUnique: jest.fn() },
+          },
+        },
+        {
+          provide: TrackingService,
+          useValue: { registerEvent: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: SqsService,
+          useValue: { enqueue: jest.fn().mockResolvedValue(undefined) },
+        },
+      ],
+    }).compile();
+
+    publicQuotesService = module.get<PublicQuotesService>(PublicQuotesService);
+    prisma = module.get(PrismaService);
+  });
+
+  /**
+   * Feature: advanced-calculator, Property 5: internalCost excluded from public response
+   *
+   * For any collection of items with arbitrary internalCost values, the public quote
+   * response must not contain the `internalCost` key on any item.
+   *
+   * Validates: Requirement 9.5
+   */
+  it('P5: internalCost never appears in public quote response items', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(quoteItemWithInternalCostArb, { minLength: 1, maxLength: 10 }),
+        async (items) => {
+          jest.clearAllMocks();
+
+          (prisma.quote.findUnique as jest.Mock).mockResolvedValue(
+            buildMockQuote(items),
+          );
+
+          const result = await publicQuotesService.findByPublicId('pub-test-id');
+
+          // Feature: advanced-calculator, Property 5: internalCost excluded from public response
+          return result.items.every(
+            (item) => !Object.prototype.hasOwnProperty.call(item, 'internalCost'),
+          );
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  /**
+   * Feature: advanced-calculator, Property 5 (edge case): internalCost absent even when non-zero
+   *
+   * Specifically targets non-zero internalCost values to ensure the exclusion is not
+   * accidentally relying on falsy-value filtering.
+   */
+  it('P5: internalCost absent from public response even when value is non-zero', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          quoteItemWithInternalCostArb.filter((item) => (item.internalCost as number) > 0),
+          { minLength: 1, maxLength: 10 },
+        ),
+        async (items) => {
+          jest.clearAllMocks();
+
+          (prisma.quote.findUnique as jest.Mock).mockResolvedValue(
+            buildMockQuote(items),
+          );
+
+          const result = await publicQuotesService.findByPublicId('pub-test-id');
+
+          // Feature: advanced-calculator, Property 5: internalCost excluded from public response
+          return result.items.every(
+            (item) => !Object.prototype.hasOwnProperty.call(item, 'internalCost'),
+          );
+        },
+      ),
+      { numRuns: 200 },
     );
   });
 });

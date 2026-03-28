@@ -12,7 +12,7 @@ import { TrackingService } from '../tracking/tracking.service';
 export interface SignQuoteParams {
   publicId: string;
   signerName: string;
-  signatureImage: string;
+  signatureImage?: string;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -81,7 +81,9 @@ export class SignatureService {
 
     // Validate inputs
     this.validateSignerName(signerName);
-    this.validateSignatureImage(signatureImage);
+    if (signatureImage) {
+      this.validateSignatureImage(signatureImage);
+    }
 
     // Fetch quote by publicId
     const quote = await this.prisma.quote.findUnique({
@@ -105,25 +107,26 @@ export class SignatureService {
         create: {
           quoteId: quote.id,
           signerName: signerName.trim(),
-          signatureImage,
+          signatureImage: signatureImage ?? '',
           ipAddress: ipAddress ?? null,
           userAgent: userAgent ?? null,
         },
         update: {
           signerName: signerName.trim(),
-          signatureImage,
+          signatureImage: signatureImage ?? '',
           ipAddress: ipAddress ?? null,
           userAgent: userAgent ?? null,
           signedAt: new Date(),
         },
       });
 
-      // Update quote status to SIGNED and set signedAt
+      // Update quote status to ACCEPTED and set signedAt + acceptedAt
       const updatedQuote = await tx.quote.update({
         where: { id: quote.id },
         data: {
-          status: QuoteStatus.SIGNED,
+          status: QuoteStatus.ACCEPTED,
           signedAt: new Date(),
+          acceptedAt: new Date(),
         },
       });
 
@@ -133,11 +136,12 @@ export class SignatureService {
     // Register tracking event
     await this.trackingService.registerEvent({
       quoteId: quote.id,
-      eventType: TrackingEventType.QUOTE_SIGNED,
+      eventType: TrackingEventType.QUOTE_ACCEPTED,
       ipAddress,
       userAgent,
       metadata: {
         signerName: signerName.trim(),
+        via: 'signature',
       },
     });
 

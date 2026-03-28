@@ -2,12 +2,20 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { Plan, QuoteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { calculateItemTotal, calculateQuoteTotals } from './utils/calculate-totals';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { ListQuotesDto } from './dto/list-quotes.dto';
+
+const TERMINAL_STATES: QuoteStatus[] = [
+  QuoteStatus.ACCEPTED,
+  QuoteStatus.REJECTED,
+  QuoteStatus.EXPIRED,
+];
 
 const FREE_PLAN_MONTHLY_LIMIT = 5;
 
@@ -165,6 +173,59 @@ export class QuotesService {
 
     return this.prisma.quote.findUnique({
       where: { id: copy.id },
+      include: { items: { orderBy: { order: 'asc' } }, client: true },
+    });
+  }
+
+  async recalculate(userId: string, quoteId: string) {
+    const quote = await this.prisma.quote.findFirst({
+      where: { id: quoteId, userId, deletedAt: null },
+      include: { items: { orderBy: { order: 'asc' } }, client: true },
+    });
+
+    if (!quote) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    if (TERMINAL_STATES.includes(quote.status)) {
+      throw new UnprocessableEntityException(
+        `Cannot recalculate a quote in ${quote.status} status`,
+      );
+    }
+
+    // Recalculate each item.total and persist
+    for (const item of quote.items) {
+      const newTotal = calculateItemTotal({
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        discount: Number(item.discount),
+        taxRate: Number(item.taxRate),
+      });
+      await this.prisma.quoteItem.update({
+        where: { id: item.id },
+        data: { total: newTotal },
+      });
+    }
+
+    // Recalculate quote totals
+    const totals = calculateQuoteTotals(
+      quote.items.map((i) => ({
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unitPrice),
+        discount: Number(i.discount),
+        taxRate: Number(i.taxRate),
+      })),
+      Number(quote.taxRate),
+      Number(quote.discount),
+    );
+
+    return this.prisma.quote.update({
+      where: { id: quoteId },
+      data: {
+        subtotal: totals.subtotal,
+        taxAmount: totals.taxAmount,
+        total: totals.total,
+      },
       include: { items: { orderBy: { order: 'asc' } }, client: true },
     });
   }

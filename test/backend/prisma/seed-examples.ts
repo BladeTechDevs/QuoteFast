@@ -444,16 +444,16 @@ async function main() {
   console.log(`   📅 Rechazada hace 15 días\n`);
 
   // ══════════════════════════════════════════════════════════════════════════
-  // 6. COTIZACIÓN FIRMADA (SIGNED)
+  // 6. COTIZACIÓN ACEPTADA VÍA FIRMA (ACCEPTED + Signature)
   // ══════════════════════════════════════════════════════════════════════════
-  console.log('✍️ Creando cotización en estado SIGNED...');
+  console.log('✍️ Creando cotización aceptada vía firma...');
   
   const signedQuote = await prisma.quote.create({
     data: {
       userId: user.id,
       clientId: client3.id,
       title: 'Desarrollo de Dashboard Analítico',
-      status: QuoteStatus.SIGNED,
+      status: QuoteStatus.ACCEPTED,
       currency: 'USD',
       taxRate: 0,
       discount: 2000,
@@ -462,7 +462,8 @@ async function main() {
       validUntil: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       sentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       viewedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-      signedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // Firmada hace 2 horas
+      signedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      acceptedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
       subtotal: 0,
       taxAmount: 0,
       total: 0,
@@ -529,7 +530,7 @@ async function main() {
       },
       {
         quoteId: signedQuote.id,
-        eventType: 'QUOTE_SIGNED',
+        eventType: 'QUOTE_ACCEPTED',
         ipAddress: '192.168.1.104',
         userAgent: 'Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X)',
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
@@ -539,7 +540,7 @@ async function main() {
 
   console.log(`   ✅ Cotización SIGNED creada: ${signedQuote.title}`);
   console.log(`   💰 Total: $${signedTotal.toLocaleString('en-US')} USD`);
-  console.log(`   📅 Firmada hace 2 horas`);
+  console.log(`   📅 Firmada y aceptada hace 2 horas`);
   console.log(`   ✍️ Firma electrónica registrada\n`);
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -553,7 +554,7 @@ async function main() {
   console.log('   3. VIEWED   - Rediseño de Sitio Web Corporativo');
   console.log('   4. ACCEPTED - Sistema de Gestión de Inventario');
   console.log('   5. REJECTED - Desarrollo de E-commerce');
-  console.log('   6. SIGNED   - Desarrollo de Dashboard Analítico\n');
+  console.log('   6. ACCEPTED (firmada) - Desarrollo de Dashboard Analítico\n');
   console.log('🔗 Accede a la aplicación en http://localhost:3000');
   console.log('👤 Usuario: test@quotefast.com');
   console.log('🔑 Contraseña: Test123!\n');
@@ -568,3 +569,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

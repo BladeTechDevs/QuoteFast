@@ -158,7 +158,7 @@ describe('SignatureService — Persistence Property-Based Tests', () => {
 
         const signedQuote = {
           ...mockQuote,
-          status: QuoteStatus.SIGNED,
+          status: QuoteStatus.ACCEPTED,
           signedAt: now,
         };
 
@@ -293,7 +293,7 @@ describe('SignatureService — Persistence Property-Based Tests', () => {
 
           const signedQuote = {
             ...mockQuote,
-            status: QuoteStatus.SIGNED,
+            status: QuoteStatus.ACCEPTED,
             signedAt: now,
           };
 
@@ -354,3 +354,4 @@ describe('SignatureService — Persistence Property-Based Tests', () => {
     );
   });
 });
+

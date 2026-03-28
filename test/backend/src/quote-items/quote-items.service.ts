@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { QuoteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { calculateQuoteTotals } from '../quotes/utils/calculate-totals';
+import { calculateItemTotal, calculateQuoteTotals } from '../quotes/utils/calculate-totals';
 import { CreateQuoteItemDto } from './dto/create-quote-item.dto';
 import { UpdateQuoteItemDto } from './dto/update-quote-item.dto';
 
@@ -23,7 +23,15 @@ export class QuoteItemsService {
     const quote = await this.getQuoteForUser(userId, quoteId);
     this.assertNotTerminal(quote.status);
 
-    const itemTotal = dto.quantity * dto.unitPrice;
+    const discount = dto.discount ?? 0;
+    const taxRate = dto.taxRate ?? 0;
+    const internalCost = dto.internalCost ?? 0;
+    const itemTotal = calculateItemTotal({
+      quantity: dto.quantity,
+      unitPrice: dto.unitPrice,
+      discount,
+      taxRate,
+    });
 
     // Determine order: place at end if not specified
     const order =
@@ -37,6 +45,9 @@ export class QuoteItemsService {
         description: dto.description ?? null,
         quantity: dto.quantity,
         unitPrice: dto.unitPrice,
+        discount,
+        taxRate,
+        internalCost,
         total: itemTotal,
         order,
       },
@@ -66,7 +77,16 @@ export class QuoteItemsService {
       dto.quantity !== undefined ? dto.quantity : Number(item.quantity);
     const newUnitPrice =
       dto.unitPrice !== undefined ? dto.unitPrice : Number(item.unitPrice);
-    const newTotal = newQuantity * newUnitPrice;
+    const newDiscount =
+      dto.discount !== undefined ? dto.discount : Number(item.discount);
+    const newTaxRate =
+      dto.taxRate !== undefined ? dto.taxRate : Number(item.taxRate);
+    const newTotal = calculateItemTotal({
+      quantity: newQuantity,
+      unitPrice: newUnitPrice,
+      discount: newDiscount,
+      taxRate: newTaxRate,
+    });
 
     const updated = await this.prisma.quoteItem.update({
       where: { id: itemId },
@@ -75,6 +95,9 @@ export class QuoteItemsService {
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.quantity !== undefined && { quantity: dto.quantity }),
         ...(dto.unitPrice !== undefined && { unitPrice: dto.unitPrice }),
+        ...(dto.discount !== undefined && { discount: dto.discount }),
+        ...(dto.taxRate !== undefined && { taxRate: dto.taxRate }),
+        ...(dto.internalCost !== undefined && { internalCost: dto.internalCost }),
         ...(dto.order !== undefined && { order: dto.order }),
         total: newTotal,
       },
@@ -129,6 +152,8 @@ export class QuoteItemsService {
       items.map((i) => ({
         quantity: Number(i.quantity),
         unitPrice: Number(i.unitPrice),
+        discount: Number(i.discount),
+        taxRate: Number(i.taxRate),
       })),
       Number(quote.taxRate),
       Number(quote.discount),
