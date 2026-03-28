@@ -71,8 +71,7 @@ function BrandingSection() {
       accentColor: form.accentColor,
       footerText: form.footerText || null,
       companyName: form.companyName || null,
-    });(form.companyName) payload.companyName = form.companyName;
-    await updateBranding(payload);
+    });
   };
 
   return (
