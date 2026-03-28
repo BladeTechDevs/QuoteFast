@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
@@ -66,12 +66,13 @@ function BrandingSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await updateBranding({
-      logoUrl: form.logoUrl || undefined,
+      logoUrl: form.logoUrl || null,
       primaryColor: form.primaryColor,
       accentColor: form.accentColor,
-      footerText: form.footerText || undefined,
-      companyName: form.companyName || undefined,
-    });
+      footerText: form.footerText || null,
+      companyName: form.companyName || null,
+    });(form.companyName) payload.companyName = form.companyName;
+    await updateBranding(payload);
   };
 
   return (
@@ -80,6 +81,7 @@ function BrandingSection() {
       <p className="text-xs text-gray-500">
         Personaliza como aparece tu empresa en las cotizaciones publicas.
       </p>
+
       {isLoading ? (
         <div className="h-10 flex items-center">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -87,7 +89,7 @@ function BrandingSection() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Nombre de empresa"
+            label="Nombre de empresa (en cotizaciones)"
             placeholder="Acme Corp"
             value={form.companyName}
             onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
@@ -99,6 +101,7 @@ function BrandingSection() {
             onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
             helperText="URL publica de tu logo (PNG, SVG recomendado)"
           />
+
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Color primario</label>
@@ -125,8 +128,9 @@ function BrandingSection() {
               </div>
             </div>
           </div>
+
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Pie de pagina</label>
+            <label className="text-sm font-medium text-gray-700">Texto de pie de pagina</label>
             <textarea
               value={form.footerText}
               onChange={(e) => setForm((f) => ({ ...f, footerText: e.target.value }))}
@@ -137,13 +141,20 @@ function BrandingSection() {
             />
             <p className="text-xs text-gray-400">{form.footerText.length}/500</p>
           </div>
+
           <div className="rounded-lg overflow-hidden border border-gray-200">
             <div
               className="px-4 py-3 flex items-center gap-3"
-              style={{ background: `linear-gradient(to right, ${form.primaryColor}, ${form.accentColor})` }}
+              style={{
+                background: `linear-gradient(to right, ${form.primaryColor}, ${form.accentColor})`,
+              }}
             >
               {form.logoUrl && (
-                <img src={form.logoUrl} alt="Logo preview" className="h-7 w-auto object-contain rounded" />
+                <img
+                  src={form.logoUrl}
+                  alt="Logo preview"
+                  className="h-7 w-auto object-contain rounded"
+                />
               )}
               <span className="text-white text-sm font-semibold">
                 {form.companyName || 'Tu empresa'}
@@ -155,9 +166,14 @@ function BrandingSection() {
               </div>
             )}
           </div>
+
           <div className="flex items-center gap-3">
-            <Button type="submit" loading={isPending}>Guardar branding</Button>
-            {isSuccess && <span className="text-sm text-green-600">Guardado correctamente</span>}
+            <Button type="submit" loading={isPending}>
+              Guardar branding
+            </Button>
+            {isSuccess && (
+              <span className="text-sm text-green-600">Guardado correctamente</span>
+            )}
           </div>
         </form>
       )}
@@ -167,6 +183,7 @@ function BrandingSection() {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+
   const { data: usage, isLoading } = useQuery<PlanUsage>({
     queryKey: ['plan-usage'],
     queryFn: async () => {
@@ -179,16 +196,18 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto py-10 px-4 space-y-6">
       <h1 className="text-xl font-semibold text-gray-900">Configuracion</h1>
+
+      {/* Profile */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Perfil</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
           <div>
             <p className="text-xs text-gray-400 mb-0.5">Nombre</p>
-            <p className="font-medium text-gray-900">{user?.name ?? '-'}</p>
+            <p className="font-medium text-gray-900">{user?.name ?? '—'}</p>
           </div>
           <div>
             <p className="text-xs text-gray-400 mb-0.5">Email</p>
-            <p className="font-medium text-gray-900">{user?.email ?? '-'}</p>
+            <p className="font-medium text-gray-900">{user?.email ?? '—'}</p>
           </div>
           {user?.company && (
             <div>
@@ -198,9 +217,14 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Branding */}
       <BrandingSection />
+
+      {/* Plan & Usage */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">Plan y uso</h2>
+
         {isLoading ? (
           <div className="h-20 flex items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -208,34 +232,58 @@ export default function SettingsPage() {
         ) : usage ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${PLAN_COLORS[usage.plan] ?? 'bg-gray-100 text-gray-700'}`}>
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                  PLAN_COLORS[usage.plan] ?? 'bg-gray-100 text-gray-700'
+                }`}
+              >
                 {PLAN_LABELS[usage.plan] ?? usage.plan}
               </span>
             </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-sm text-gray-600">Cotizaciones este mes</p>
                 <p className="text-sm font-semibold text-gray-900">
-                  {usage.quotesThisMonth}{usage.quotesLimit !== null ? ` / ${usage.quotesLimit}` : ''}
+                  {usage.quotesThisMonth}
+                  {usage.quotesLimit !== null ? ` / ${usage.quotesLimit}` : ''}
                 </p>
               </div>
+
               {usage.quotesLimit !== null && (
                 <>
                   <div className="w-full bg-gray-100 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full transition-all ${usage.quotesRemaining === 0 ? 'bg-red-500' : usage.quotesThisMonth / usage.quotesLimit >= 0.8 ? 'bg-amber-500' : 'bg-blue-500'}`}
-                      style={{ width: `${Math.min(100, (usage.quotesThisMonth / usage.quotesLimit) * 100)}%` }}
+                      className={`h-2 rounded-full transition-all ${
+                        usage.quotesRemaining === 0
+                          ? 'bg-red-500'
+                          : usage.quotesThisMonth / usage.quotesLimit >= 0.8
+                          ? 'bg-amber-500'
+                          : 'bg-blue-500'
+                      }`}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (usage.quotesThisMonth / usage.quotesLimit) * 100,
+                        )}%`,
+                      }}
                     />
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
-                    {usage.quotesRemaining === 0 ? 'Limite alcanzado' : `${usage.quotesRemaining} restantes`}
+                    {usage.quotesRemaining === 0
+                      ? 'Limite alcanzado'
+                      : `${usage.quotesRemaining} cotizacion${usage.quotesRemaining !== 1 ? 'es' : ''} restante${usage.quotesRemaining !== 1 ? 's' : ''}`}
                   </p>
                 </>
               )}
-              {usage.quotesLimit === null && <p className="text-xs text-gray-400 mt-1">Sin limite mensual</p>}
+
+              {usage.quotesLimit === null && (
+                <p className="text-xs text-gray-400 mt-1">Sin limite mensual</p>
+              )}
             </div>
+
             <p className="text-xs text-gray-400">
-              Periodo: {fmtDate(usage.periodStart)} - {fmtDate(usage.periodEnd)}
+              Periodo: {fmtDate(usage.periodStart)} — {fmtDate(usage.periodEnd)}
             </p>
           </div>
         ) : null}
