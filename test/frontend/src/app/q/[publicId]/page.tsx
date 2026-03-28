@@ -13,6 +13,15 @@ interface Props {
   params: { publicId: string };
 }
 
+function fmt(value: number, currency: string) {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(value);
+}
+
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 export default function PublicQuotePage({ params }: Props) {
   const { publicId } = params;
   const { data: quote, isLoading, isError } = usePublicQuote(publicId);
@@ -22,90 +31,222 @@ export default function PublicQuotePage({ params }: Props) {
   const [signed, setSigned] = useState(false);
   const [actionDone, setActionDone] = useState(false);
 
-  if (isLoading) return <div className="p-8 text-center text-gray-500">Cargando cotización...</div>;
-  if (isError || !quote) return <div className="p-8 text-center text-red-500">No se pudo cargar la cotización.</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <p className="text-sm text-gray-400">Cargando cotización...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !quote) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <p className="text-4xl">🔍</p>
+          <p className="text-gray-700 font-medium">Cotización no encontrada</p>
+          <p className="text-sm text-gray-400">El enlace puede haber expirado o ser incorrecto.</p>
+        </div>
+      </div>
+    );
+  }
 
   const isActionable = ACTIONABLE_STATUSES.includes(quote.status) && !signed && !actionDone;
-
-  const handleAccept = async () => {
-    await accept();
-    setActionDone(true);
-  };
-
-  const handleReject = async () => {
-    await reject();
-    setActionDone(true);
-  };
+  const hasDiscount = quote.items.some(i => i.discount > 0);
 
   return (
-    <div className="mx-auto max-w-3xl p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">{quote.title}</h1>
-        <StatusBadge status={quote.status} />
-      </div>
-
-      <div className="text-sm text-gray-600 space-y-1">
-        <p>Emisor: {quote.issuer.name}{quote.issuer.company ? ` — ${quote.issuer.company}` : ''}</p>
-        {quote.client && (
-          <p>Cliente: {quote.client.name}{quote.client.company ? ` — ${quote.client.company}` : ''}</p>
-        )}
-      </div>
-
-      {quote.items.length > 0 && (
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-2 pr-4">Descripción</th>
-              <th className="py-2 pr-4 text-right">Cant.</th>
-              <th className="py-2 pr-4 text-right">Precio</th>
-              <th className="py-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {quote.items.map((item) => (
-              <tr key={item.id} className="border-b">
-                <td className="py-2 pr-4">
-                  <p className="font-medium">{item.name}</p>
-                  {item.description && <p className="text-gray-400">{item.description}</p>}
-                </td>
-                <td className="py-2 pr-4 text-right">{item.quantity}</td>
-                <td className="py-2 pr-4 text-right">{Number(item.unitPrice).toFixed(2)}</td>
-                <td className="py-2 text-right">{Number(item.total).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      <div className="flex flex-col items-end gap-1 text-sm">
-        <p>Subtotal: {quote.currency} {Number(quote.subtotal).toFixed(2)}</p>
-        {quote.discount > 0 && <p>Descuento: -{quote.currency} {Number(quote.discount).toFixed(2)}</p>}
-        {quote.taxAmount > 0 && <p>Impuesto ({quote.taxRate}%): {quote.currency} {Number(quote.taxAmount).toFixed(2)}</p>}
-        <p className="text-base font-semibold">Total: {quote.currency} {Number(quote.total).toFixed(2)}</p>
-      </div>
-
-      {quote.notes && <p className="text-sm text-gray-600 whitespace-pre-wrap">{quote.notes}</p>}
-      {quote.terms && <p className="text-xs text-gray-400 whitespace-pre-wrap">{quote.terms}</p>}
-
-      {signed && (
-        <p className="text-green-700 font-medium">
-          ✓ Has firmado y aceptado esta cotización. El emisor ha sido notificado.
-        </p>
-      )}
-
-      {isActionable && (
-        <div className="space-y-4">
-          <div className="flex gap-3">
-            <Button onClick={handleAccept} disabled={isAccepting || isRejecting}>
-              Aceptar cotización
-            </Button>
-            <Button variant="secondary" onClick={handleReject} disabled={isAccepting || isRejecting}>
-              Rechazar
-            </Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top bar */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <span className="text-sm font-medium text-gray-700">Cotización</span>
           </div>
-          <SignatureForm publicId={publicId} onSuccess={() => setSigned(true)} />
+          <StatusBadge status={quote.status} />
         </div>
-      )}
+      </div>
+
+      <div className="mx-auto max-w-3xl px-6 py-8 space-y-6">
+
+        {/* Document header */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-8 py-6">
+            <h1 className="text-2xl font-bold text-white">{quote.title}</h1>
+            {quote.validUntil && (
+              <p className="mt-1 text-blue-100 text-sm">
+                Válida hasta el {fmtDate(quote.validUntil)}
+              </p>
+            )}
+          </div>
+
+          <div className="px-8 py-6 grid grid-cols-2 gap-8 text-sm">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Emitida por</p>
+              <p className="font-semibold text-gray-900">{quote.issuer.name}</p>
+              {quote.issuer.company && <p className="text-gray-500">{quote.issuer.company}</p>}
+            </div>
+            {quote.client && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Para</p>
+                <p className="font-semibold text-gray-900">{quote.client.name}</p>
+                {quote.client.company && <p className="text-gray-500">{quote.client.company}</p>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Items table */}
+        {quote.items.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Descripción</th>
+                  <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Cant.</th>
+                  <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Precio unit.</th>
+                  {hasDiscount && (
+                    <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Desc.</th>
+                  )}
+                  <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quote.items.map((item, idx) => (
+                  <tr
+                    key={item.id}
+                    className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
+                  >
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-gray-900">{item.name}</p>
+                      {item.description && (
+                        <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">{item.description}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-right text-gray-600 tabular-nums">{item.quantity}</td>
+                    <td className="px-4 py-4 text-right text-gray-600 tabular-nums">{fmt(item.unitPrice, quote.currency)}</td>
+                    {hasDiscount && (
+                      <td className="px-4 py-4 text-right tabular-nums">
+                        {item.discount > 0
+                          ? <span className="text-green-600 font-medium">-{item.discount}%</span>
+                          : <span className="text-gray-300">—</span>}
+                      </td>
+                    )}
+                    <td className="px-6 py-4 text-right font-semibold text-gray-900 tabular-nums">
+                      {fmt(item.total, quote.currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Totals */}
+            <div className="border-t border-gray-200 bg-gray-50 px-6 py-5">
+              <div className="ml-auto max-w-xs space-y-2 text-sm">
+                <div className="flex justify-between text-gray-500">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">{fmt(quote.subtotal, quote.currency)}</span>
+                </div>
+                {quote.discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Descuento</span>
+                    <span className="tabular-nums">-{fmt(quote.discount, quote.currency)}</span>
+                  </div>
+                )}
+                {quote.taxAmount > 0 && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>IVA ({quote.taxRate}%)</span>
+                    <span className="tabular-nums">{fmt(quote.taxAmount, quote.currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-300">
+                  <span className="font-bold text-gray-900 text-base">Total</span>
+                  <span className="font-bold text-blue-600 text-xl tabular-nums">{fmt(quote.total, quote.currency)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notes & Terms */}
+        {(quote.notes || quote.terms) && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+            {quote.notes && (
+              <div className="px-6 py-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Notas</p>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{quote.notes}</p>
+              </div>
+            )}
+            {quote.terms && (
+              <div className="px-6 py-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Términos y condiciones</p>
+                <p className="text-xs text-gray-400 whitespace-pre-wrap leading-relaxed">{quote.terms}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Signed confirmation */}
+        {signed && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-6 py-5 flex items-start gap-4">
+            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-green-800">Cotización firmada y aceptada</p>
+              <p className="text-sm text-green-600 mt-0.5">El emisor ha sido notificado. Guarda este enlace como comprobante.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Action panel */}
+        {isActionable && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <p className="font-semibold text-gray-900">Responder cotización</p>
+              <p className="text-sm text-gray-400 mt-0.5">Acepta o rechaza esta propuesta. Puedes agregar tu firma abajo.</p>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              <div className="flex gap-3">
+                <Button
+                  size="lg"
+                  onClick={async () => { await accept(); setActionDone(true); }}
+                  disabled={isAccepting || isRejecting}
+                  loading={isAccepting}
+                >
+                  Aceptar cotización
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  onClick={async () => { await reject(); setActionDone(true); }}
+                  disabled={isAccepting || isRejecting}
+                  loading={isRejecting}
+                >
+                  Rechazar
+                </Button>
+              </div>
+              <div className="border-t border-gray-100 pt-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Firma digital (opcional)</p>
+                <SignatureForm publicId={publicId} onSuccess={() => setSigned(true)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <p className="text-center text-xs text-gray-300 pb-4">
+          Cotización #{publicId}
+        </p>
+      </div>
     </div>
   );
 }
