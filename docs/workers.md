@@ -4,6 +4,30 @@ Los workers son funciones Lambda que consumen mensajes de AWS SQS para procesar 
 
 Ubicación: `workers/src/`
 
+## Configuración del cliente Prisma
+
+Los workers usan `@prisma/client` pero **no tienen su propio schema**. Apuntan al cliente generado del backend. El `package.json` de workers referencia el cliente del backend directamente:
+
+```json
+"@prisma/client": "file:../backend/node_modules/@prisma/client"
+```
+
+Por esto, antes de usar los workers hay que tener el cliente generado en el backend:
+
+```bash
+# en test/backend
+npx prisma generate
+```
+
+Luego instalar dependencias de workers:
+
+```bash
+# en test/workers
+npm install
+```
+
+> No correr `prisma generate` dentro de `workers/` — no tiene schema propio.
+
 ## Email Worker (`email-worker.ts`)
 
 Procesa mensajes de tipo `SEND_QUOTE` o `SEND_EMAIL`.
@@ -75,13 +99,20 @@ npm run build   # compila TypeScript a dist/
 npm run test    # Jest
 ```
 
+## tsconfig
+
+El `tsconfig.json` usa `"lib": ["ES2020"]` y `"types": ["node", "aws-lambda"]` para que TypeScript reconozca `process`, `Buffer` y los tipos de Lambda sin necesitar `"dom"`.
+
 ---
 
 ## Despliegue
 
 Los workers se despliegan como funciones Lambda via Terraform (módulo `terraform/modules/lambda`).
 
-- **Dev:** 256 MB de memoria, timeout 30s
-- **Prod:** 1 GB de memoria, timeout 60s
+- **Memoria:** 512 MB
+- **Almacenamiento efímero:** 512 MB
+- **Arquitectura:** x86_64
+- **Timeout:** 60s
+- **Invocaciones estimadas:** ~200/mes
 
 Ver [Infraestructura](./infraestructura.md) para más detalles.

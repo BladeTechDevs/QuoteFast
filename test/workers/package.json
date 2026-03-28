@@ -12,7 +12,7 @@
     "@aws-sdk/client-s3": "^3.0.0",
     "@aws-sdk/client-ses": "^3.0.0",
     "@aws-sdk/client-sqs": "^3.0.0",
-    "@prisma/client": "^5.10.0",
+    "@prisma/client": "file:../backend/node_modules/@prisma/client",
     "pdfkit": "^0.15.0"
   },
   "devDependencies": {
