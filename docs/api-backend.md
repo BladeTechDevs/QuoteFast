@@ -80,6 +80,22 @@ Los tokens de acceso expiran. Usar el endpoint de refresh para renovarlos.
 | DELETE | `/quotes/:id` | Sí | Soft delete |
 | POST | `/quotes/:id/send` | Sí | Enviar cotización (DRAFT → SENT) |
 | POST | `/quotes/:id/duplicate` | Sí | Duplicar cotización |
+| POST | `/quotes/:id/save-as-template` | Sí | Guardar cotización como QuoteTemplate |
+
+**POST /quotes body (con templateId):**
+```json
+{
+  "title": "string",
+  "templateId": "uuid (QuoteTemplate o Template legado)",
+  "clientId": "uuid (opcional)",
+  "currency": "string (opcional, tiene precedencia sobre la plantilla)"
+}
+```
+
+**POST /quotes/:id/save-as-template body:**
+```json
+{ "name": "string (requerido, max 255)" }
+```
 
 **Límite plan FREE:** máximo 5 cotizaciones por mes.
 
@@ -96,14 +112,81 @@ Los tokens de acceso expiran. Usar el endpoint de refresh para renovarlos.
 
 ---
 
-### Templates — `/api/templates`
+### Catalog — `/api/catalog`
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| GET | `/templates` | Sí | Listar plantillas |
-| POST | `/templates` | Sí | Crear plantilla |
-| PATCH | `/templates/:id` | Sí | Actualizar plantilla |
-| DELETE | `/templates/:id` | Sí | Eliminar plantilla |
+| GET | `/catalog` | Sí | Listar ítems del catálogo (paginado, con búsqueda) |
+| POST | `/catalog` | Sí | Crear ítem de catálogo |
+| PATCH | `/catalog/:id` | Sí | Actualizar ítem (patch parcial) |
+| DELETE | `/catalog/:id` | Sí | Eliminar ítem |
+
+**POST /catalog body:**
+```json
+{
+  "name": "string (requerido, max 255)",
+  "description": "string (opcional)",
+  "unitPrice": "number (>= 0, requerido)",
+  "taxRate": "number (>= 0, opcional)",
+  "discount": "number (>= 0, opcional)",
+  "internalCost": "number (>= 0, opcional)"
+}
+```
+
+**GET /catalog query params:** `page`, `limit`, `search` (filtra por name o description, case-insensitive)
+
+---
+
+### Templates — `/api/templates` (legado)
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/templates` | Sí | Listar plantillas (modelo legado con content JSON) |
+| POST | `/templates` | Sí | Crear plantilla legada |
+| PATCH | `/templates/:id` | Sí | Actualizar plantilla legada |
+| DELETE | `/templates/:id` | Sí | Eliminar plantilla legada |
+
+> Mantenido por compatibilidad. Para nuevas integraciones usar `/api/quote-templates`.
+
+---
+
+### Quote Templates — `/api/quote-templates`
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/quote-templates` | Sí | Listar QuoteTemplates (propias + sistema) con TemplateItems |
+| GET | `/quote-templates/:id` | Sí | Detalle con TemplateItems ordenados |
+| POST | `/quote-templates` | Sí | Crear QuoteTemplate con ítems opcionales |
+| PATCH | `/quote-templates/:id` | Sí | Actualizar metadatos y reemplazar TemplateItems |
+| DELETE | `/quote-templates/:id` | Sí | Eliminar QuoteTemplate y sus TemplateItems (cascade) |
+
+**POST /quote-templates body:**
+```json
+{
+  "name": "string (requerido, max 255)",
+  "currency": "string (opcional)",
+  "taxRate": "number >= 0 (opcional)",
+  "discount": "number >= 0 (opcional)",
+  "notes": "string (opcional)",
+  "terms": "string (opcional)",
+  "items": [
+    {
+      "name": "string (requerido, max 255)",
+      "description": "string (opcional)",
+      "quantity": "number >= 0 (opcional, default 1)",
+      "unitPrice": "number >= 0 (requerido)",
+      "discount": "number >= 0 (opcional)",
+      "taxRate": "number >= 0 (opcional)",
+      "internalCost": "number >= 0 (opcional)",
+      "order": "number"
+    }
+  ]
+}
+```
+
+**Errores:**
+- `403` al intentar modificar o eliminar una plantilla del sistema (`isDefault = true`)
+- `404` si la plantilla no existe o no es accesible
 
 ---
 

@@ -70,7 +70,7 @@ Elimina un cliente. Antes verifica que no tenga cotizaciones asociadas; si las t
 ## QuotesService (`src/quotes/quotes.service.ts`)
 
 ### `create(userId, dto)`
-Crea una cotización en estado `DRAFT`. Si el usuario está en plan FREE, llama a `enforceFreePlanLimit` antes de crear. Si se provee un `templateId`, carga los defaults del template (currency, taxRate, discount, notes, terms) y los usa como fallback para los campos no especificados en el DTO.
+Crea una cotización en estado `DRAFT`. Si el usuario está en plan FREE, llama a `enforceFreePlanLimit` antes de crear. Si se provee un `templateId`, primero busca una `QuoteTemplate` (nuevo modelo con ítems estructurados); si no existe como `QuoteTemplate`, hace fallback al modelo `Template` legado. Los valores del DTO tienen precedencia sobre los de la plantilla (nullish coalescing). Si la `QuoteTemplate` tiene `TemplateItem`, los copia como `QuoteItem` dentro de una transacción y recalcula los totales de la cotización (`subtotal`, `taxAmount`, `total`). Lanza `NotFoundException` si el `templateId` no corresponde a ninguna plantilla accesible.
 
 ### `findAll(userId, query)`
 Lista cotizaciones del usuario con paginación, filtro por `status`, búsqueda por título (case-insensitive) y ordenamiento configurable. Excluye cotizaciones con soft delete. Retorna `{ data, total, page, limit }`.
@@ -216,7 +216,7 @@ Retorna el objeto de branding por defecto con colores azul corporativo y campos 
 
 ---
 
-## TemplatesService (`src/templates/templates.service.ts`)
+## TemplatesService (`src/templates/templates.service.ts`) — Legado
 
 ### `onModuleInit()`
 Hook de NestJS que se ejecuta al iniciar el módulo. Llama a `seedDefaultTemplates` para asegurar que las plantillas del sistema existan.
@@ -228,16 +228,58 @@ Crea las 2 plantillas del sistema si no existen: "Propuesta de Servicios Profesi
 Crea una plantilla personalizada para el usuario con `isDefault = false`.
 
 ### `findAll(userId, userPlan)`
-Lista las plantillas disponibles para el usuario: las propias más las del sistema (`isDefault = true, userId = null`). El comportamiento es el mismo para todos los planes actualmente (la lógica de TEAM/BUSINESS está preparada para compartir plantillas por equipo en el futuro).
+Lista las plantillas disponibles para el usuario: las propias más las del sistema (`isDefault = true, userId = null`).
 
 ### `findOne(userId, id)`
 Busca una plantilla por ID. Permite acceder tanto a las propias como a las del sistema. Lanza `NotFoundException` si no existe.
 
 ### `update(userId, id, dto)`
-Actualiza una plantilla. Solo permite modificar plantillas propias del usuario (no las del sistema). Lanza `NotFoundException` si no existe o no pertenece al usuario.
+Actualiza una plantilla. Solo permite modificar plantillas propias del usuario. Lanza `NotFoundException` si no existe o no pertenece al usuario.
 
 ### `remove(userId, id)`
 Elimina una plantilla propia del usuario. No permite eliminar plantillas del sistema.
+
+---
+
+## CatalogService (`src/catalog/catalog.service.ts`)
+
+### `create(userId, dto)`
+Crea un nuevo `CatalogItem` asociado al usuario. Aplica defaults de 0 para `taxRate`, `discount` e `internalCost` si no se proporcionan.
+
+### `findAll(userId, query)`
+Lista los `CatalogItem` del usuario con paginación (`page`, `limit`, default 20) y búsqueda case-insensitive por `name` o `description`. Retorna `{ data, total, page, limit }`.
+
+### `update(userId, id, dto)`
+Aplica un patch parcial al `CatalogItem`. Verifica ownership con `findFirst({ where: { id, userId } })`. Lanza `NotFoundException` si no pertenece al usuario.
+
+### `remove(userId, id)`
+Elimina permanentemente el `CatalogItem`. Verifica ownership antes de eliminar. Lanza `NotFoundException` si no pertenece al usuario. La eliminación no afecta los `QuoteItem` que copiaron sus datos (no hay FK).
+
+---
+
+## QuoteTemplatesService (`src/templates/quote-templates.service.ts`)
+
+### `create(userId, dto)`
+Crea una `QuoteTemplate` con `isDefault = false`. Si el DTO incluye `items`, los crea como `TemplateItem` dentro de una transacción Prisma. Retorna la plantilla con sus ítems incluidos.
+
+### `findAll(userId)`
+Retorna las `QuoteTemplate` propias del usuario más las del sistema (`isDefault = true, userId = null`), incluyendo sus `TemplateItem` ordenados por `order` ascendente.
+
+### `findOne(userId, id)`
+Retorna una `QuoteTemplate` con sus `TemplateItem` ordenados. Permite acceder a plantillas propias y del sistema. Lanza `NotFoundException` si no existe o no es accesible.
+
+### `update(userId, id, dto)`
+Actualiza los metadatos de la plantilla. Si el DTO incluye `items`, reemplaza completamente la lista de `TemplateItem` (delete + createMany en transacción). Lanza `ForbiddenException` (403) si la plantilla es del sistema (`isDefault = true`). Lanza `NotFoundException` si no existe.
+
+### `remove(userId, id)`
+Elimina la `QuoteTemplate` y todos sus `TemplateItem` en cascada (manejado por Prisma `onDelete: Cascade`). Lanza `ForbiddenException` (403) si es del sistema. Lanza `NotFoundException` si no existe o no pertenece al usuario.
+
+---
+
+## QuotesService — método `saveAsTemplate` (`src/quotes/quotes.service.ts`)
+
+### `saveAsTemplate(userId, quoteId, dto)`
+Guarda una `Quote` existente como nueva `QuoteTemplate`. Copia los metadatos de la cotización (`currency`, `taxRate`, `discount`, `notes`, `terms`) y todos sus `QuoteItem` como `TemplateItem` dentro de una transacción. Lanza `NotFoundException` si la cotización no pertenece al usuario. Retorna la `QuoteTemplate` creada con sus ítems.
 
 ---
 

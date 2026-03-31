@@ -142,7 +142,7 @@ describe('PublicQuotePage integration', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText('✓ Has firmado y aceptado esta cotización. El emisor ha sido notificado.'),
+          screen.getByText('Cotización firmada y aceptada'),
         ).toBeInTheDocument();
       });
     });

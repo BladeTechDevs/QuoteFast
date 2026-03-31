@@ -11,60 +11,61 @@ ORM: **Prisma 5**
 ┌─────────────────┐
 │      User       │
 │─────────────────│
-│ id (PK)         │◄──────────────────────────────────┐
-│ email (unique)  │                                   │
-│ passwordHash    │                                   │
-│ name            │                                   │
-│ plan            │                                   │
-└────────┬────────┘                                   │
-         │ 1                                          │
-         │                                            │
-    ┌────┴──────────────────────────┐                 │
-    │                               │                 │
-    │ n                             │ n               │ 1
-┌───▼─────────┐           ┌────────▼──────┐  ┌───────┴──────────┐
-│   Client    │           │    Quote      │  │    Template      │
-│─────────────│           │───────────────│  │──────────────────│
-│ id (PK)     │◄──────────│ id (PK)       │  │ id (PK)          │
-│ userId (FK) │  0..n     │ publicId      │  │ userId (FK)?     │
-│ name        │           │ userId (FK)   │  │ name             │
-│ email?      │           │ clientId (FK)?│  │ content (JSON)   │
-│ company?    │           │ title         │  │ isDefault        │
-│ phone?      │           │ status        │  └──────────────────┘
-│ address?    │           │ currency      │
-│ notes?      │           │ subtotal      │  ┌──────────────────┐
-└─────────────┘           │ taxRate       │  │ BrandingSettings │
-                          │ taxAmount     │  │──────────────────│
-                          │ total         │  │ id (PK)          │
-                          │ discount      │◄─│ userId (FK,uniq) │
-                          │ validUntil?   │  │ logoUrl?         │
-                          │ pdfUrl?       │  │ primaryColor     │
-                          │ sentAt?       │  │ accentColor      │
-                          │ viewedAt?     │  │ footerText?      │
-                          │ acceptedAt?   │  │ companyName?     │
-                          │ rejectedAt?   │  └──────────────────┘
-                          │ signedAt?     │
-                          │ deletedAt?    │
-                          └──────┬────────┘
-                                 │ 1
-                    ┌────────────┼────────────┐
-                    │            │            │
-                    │ n          │ 0..1       │ n
-          ┌─────────▼──┐  ┌─────▼──────┐  ┌─▼────────────┐
-          │ QuoteItem  │  │ Signature  │  │TrackingEvent │
-          │────────────│  │────────────│  │──────────────│
-          │ id (PK)    │  │ id (PK)    │  │ id (PK)      │
-          │ quoteId(FK)│  │ quoteId(FK)│  │ quoteId (FK) │
-          │ name       │  │ signerName │  │ eventType    │
-          │ description│  │ signatureImg│ │ metadata?    │
-          │ quantity   │  │ ipAddress? │  │ ipAddress?   │
-          │ unitPrice  │  │ userAgent? │  │ userAgent?   │
-          │ total      │  │ signedAt   │  │ createdAt    │
-          │ order      │  └────────────┘  └──────────────┘
-          │ discount   │
-          │ taxRate    │
-          │ internalCost│
-          └────────────┘
+│ id (PK)         │◄──────────────────────────────────────────────┐
+│ email (unique)  │                                               │
+│ passwordHash    │                                               │
+│ name            │                                               │
+│ plan            │                                               │
+└────────┬────────┘                                               │
+         │ 1                                                      │
+         │                                                        │
+    ┌────┴──────────────────────────────────────┐                 │
+    │              │              │             │                 │
+    │ n            │ n            │ n           │ n               │ 1
+┌───▼─────────┐  ┌▼──────────┐  ┌▼──────────┐ ┌▼─────────────┐ ┌┴──────────────┐
+│   Client    │  │   Quote   │  │CatalogItem│ │QuoteTemplate │ │   Template    │
+│─────────────│  │───────────│  │───────────│ │──────────────│ │───────────────│
+│ id (PK)     │◄─│ id (PK)   │  │ id (PK)   │ │ id (PK)      │ │ id (PK)       │
+│ userId (FK) │  │ publicId  │  │ userId(FK)│ │ userId(FK)?  │ │ userId (FK)?  │
+│ name        │  │ userId(FK)│  │ name      │ │ name         │ │ name          │
+│ email?      │  │ clientId? │  │ description│ │ currency     │ │ content (JSON)│
+│ company?    │  │ title     │  │ unitPrice │ │ taxRate      │ │ isDefault     │
+│ phone?      │  │ status    │  │ taxRate   │ │ discount     │ └───────────────┘
+│ address?    │  │ currency  │  │ discount  │ │ notes?       │
+│ notes?      │  │ subtotal  │  │internalCost│ │ terms?       │
+└─────────────┘  │ taxRate   │  └───────────┘ │ isDefault    │
+                 │ taxAmount │                 └──────┬───────┘
+                 │ total     │                        │ 1
+                 │ discount  │                        │ n
+                 │ validUntil│               ┌────────▼──────┐
+                 │ pdfUrl?   │               │ TemplateItem  │
+                 │ sentAt?   │               │───────────────│
+                 │ viewedAt? │               │ id (PK)       │
+                 │ acceptedAt│               │ templateId(FK)│
+                 │ rejectedAt│               │ name          │
+                 │ signedAt? │               │ description?  │
+                 │ deletedAt?│               │ quantity      │
+                 │quoteTemplateId?│          │ unitPrice     │
+                 └─────┬─────┘              │ discount      │
+                       │ 1                  │ taxRate       │
+          ┌────────────┼────────────┐       │ internalCost  │
+          │            │            │       │ order         │
+          │ n          │ 0..1       │ n     └───────────────┘
+┌─────────▼──┐  ┌──────▼─────┐  ┌──▼───────────┐  ┌──────────────────┐
+│ QuoteItem  │  │ Signature  │  │TrackingEvent │  │ BrandingSettings │
+│────────────│  │────────────│  │──────────────│  │──────────────────│
+│ id (PK)    │  │ id (PK)    │  │ id (PK)      │  │ id (PK)          │
+│ quoteId(FK)│  │ quoteId(FK)│  │ quoteId (FK) │  │ userId (FK,uniq) │
+│ name       │  │ signerName │  │ eventType    │  │ logoUrl?         │
+│ description│  │ signatureImg│ │ metadata?    │  │ primaryColor     │
+│ quantity   │  │ ipAddress? │  │ ipAddress?   │  │ accentColor      │
+│ unitPrice  │  │ userAgent? │  │ userAgent?   │  │ footerText?      │
+│ total      │  │ signedAt   │  │ createdAt    │  │ companyName?     │
+│ order      │  └────────────┘  └──────────────┘  └──────────────────┘
+│ discount   │
+│ taxRate    │
+│ internalCost│
+└────────────┘
 ```
 
 ---
@@ -90,7 +91,16 @@ Registro de firma electrónica de una cotización. Relación 1:1 con Quote (una 
 Log de todas las interacciones del cliente con una cotización. Cada apertura, aceptación, rechazo o descarga de PDF genera un registro. Incluye IP y user-agent para análisis de comportamiento. El evento `QUOTE_OPENED` tiene lógica especial: si es la primera apertura, actualiza `viewedAt` en la cotización y cambia el estado de `SENT` a `VIEWED`.
 
 ### Template
-Plantillas reutilizables para pre-llenar cotizaciones. Las plantillas con `userId = null` e `isDefault = true` son del sistema (visibles para todos, no modificables). Las plantillas con `userId` son propias del usuario.
+Plantillas reutilizables (modelo legado) para pre-llenar cotizaciones. El contenido se almacena como JSON sin estructura fija. Las plantillas con `userId = null` e `isDefault = true` son del sistema. Mantenido por compatibilidad hacia atrás; el nuevo modelo es `QuoteTemplate`.
+
+### CatalogItem
+Catálogo de productos y servicios del usuario. Cada ítem pertenece a un único usuario. Los datos se copian al `QuoteItem` al agregar un ítem del catálogo a una cotización — no existe FK entre `CatalogItem` y `QuoteItem`, por lo que eliminar un ítem del catálogo no afecta las cotizaciones existentes.
+
+### QuoteTemplate
+Plantillas de cotización con ítems estructurados. Reemplaza al modelo `Template` para el flujo principal. Las plantillas con `userId = null` e `isDefault = true` son del sistema (solo lectura). Las propias del usuario tienen `isDefault = false`. Al crear una cotización con `templateId`, los metadatos y los `TemplateItem` se copian a la cotización.
+
+### TemplateItem
+Ítems predefinidos de una `QuoteTemplate`. Se eliminan en cascada al eliminar la plantilla. Al crear una cotización desde la plantilla, los datos se copian como `QuoteItem` independientes — no existe FK entre `TemplateItem` y `QuoteItem`.
 
 ### BrandingSettings
 Configuración de identidad visual del usuario. Se aplica automáticamente en la vista pública de todas sus cotizaciones. Relación 1:1 con User. Si no existe configuración, el sistema usa valores por defecto (`primaryColor: #2563eb`).
@@ -147,6 +157,7 @@ Configuración de identidad visual del usuario. Se aplica automáticamente en la
 | rejectedAt | DateTime? | Cuándo fue rechazada |
 | signedAt | DateTime? | Cuándo fue firmada |
 | deletedAt | DateTime? | Soft delete |
+| quoteTemplateId | UUID? | Referencia informativa a la QuoteTemplate de origen (sin FK) |
 
 Índices: `userId`, `status`, `deletedAt`
 
@@ -195,6 +206,57 @@ Configuración de identidad visual del usuario. Se aplica automáticamente en la
 | name | String | Nombre de la plantilla |
 | content | Json | Contenido de la plantilla |
 | isDefault | Boolean | Si es la plantilla por defecto |
+
+### CatalogItem
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| userId | UUID | FK → User (cascade delete) |
+| name | VarChar(255) | Nombre del producto/servicio |
+| description | String? | Descripción |
+| unitPrice | Decimal(12,2) | Precio unitario |
+| taxRate | Decimal(5,2) | Tasa de impuesto % (default 0) |
+| discount | Decimal(12,2) | Descuento (default 0) |
+| internalCost | Decimal(12,2) | Costo interno (default 0) |
+| createdAt | DateTime | Fecha de creación |
+| updatedAt | DateTime | Última actualización |
+
+Índices: `userId`, `(userId, name)`
+
+### QuoteTemplate
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| userId | UUID? | FK → User (null = plantilla del sistema) |
+| name | VarChar(255) | Nombre de la plantilla |
+| currency | String | Moneda (default: USD) |
+| taxRate | Decimal(5,2) | Tasa de impuesto % (default 0) |
+| discount | Decimal(12,2) | Descuento (default 0) |
+| notes | String? | Notas predeterminadas |
+| terms | String? | Términos predeterminados |
+| isDefault | Boolean | Si es plantilla del sistema (default false) |
+| createdAt | DateTime | Fecha de creación |
+| updatedAt | DateTime | Última actualización |
+
+Índices: `userId`, `isDefault`
+
+### TemplateItem
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| templateId | UUID | FK → QuoteTemplate (cascade delete) |
+| name | VarChar(255) | Nombre del ítem |
+| description | String? | Descripción |
+| quantity | Decimal(10,2) | Cantidad (default 1) |
+| unitPrice | Decimal(12,2) | Precio unitario |
+| discount | Decimal(12,2) | Descuento (default 0) |
+| taxRate | Decimal(5,2) | Impuesto % (default 0) |
+| internalCost | Decimal(12,2) | Costo interno (default 0) |
+| order | Int | Orden de visualización |
+| createdAt | DateTime | Fecha de creación |
+| updatedAt | DateTime | Última actualización |
+
+Índice: `templateId`
 
 ### BrandingSettings
 | Campo | Tipo | Descripción |

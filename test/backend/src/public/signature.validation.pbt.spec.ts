@@ -5,6 +5,7 @@ import { SignatureService } from './signature.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Property-Based Tests for Signature Validation
@@ -99,6 +100,10 @@ describe('SignatureService — Validation Property-Based Tests', () => {
         {
           provide: TrackingService,
           useValue: { registerEvent: jest.fn() },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

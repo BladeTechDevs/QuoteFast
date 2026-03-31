@@ -9,6 +9,7 @@ import { SignatureService } from './signature.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // Valid base64 image data URIs for testing
 const VALID_PNG_IMAGE =
@@ -89,6 +90,10 @@ describe('SignatureService', () => {
           useValue: {
             registerEvent: jest.fn(),
           },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();
@@ -230,6 +235,7 @@ describe('SignatureService', () => {
         userAgent: 'Mozilla/5.0',
         metadata: {
           signerName: 'John Doe',
+          via: 'signature',
         },
       });
     });
@@ -512,6 +518,7 @@ describe('SignatureService', () => {
         userAgent: 'Mozilla/5.0',
         metadata: {
           signerName: 'John Doe',
+          via: 'signature',
         },
       });
     });
@@ -562,6 +569,7 @@ describe('SignatureService', () => {
         userAgent: undefined,
         metadata: {
           signerName: 'John Doe',
+          via: 'signature',
         },
       });
     });

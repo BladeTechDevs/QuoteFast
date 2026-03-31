@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Sync Docs on Source Change",
+  "description": "When any source file changes (TypeScript, Prisma schema, config files), asks the agent to update the relevant documentation in the /docs folder or README.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/prisma/schema.prisma",
+      "**/package.json",
+      "**/nest-cli.json",
+      "**/*.env.example",
+      "**/Dockerfile"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source file was just edited. Review the change and determine if any documentation needs to be updated. Check the /docs folder for relevant markdown files (e.g., docs/api-backend.md, docs/base-de-datos.md, docs/funciones.md, docs/frontend.md, docs/workers.md, docs/notificaciones.md, etc.) and update the appropriate doc if the change affects the described functionality, architecture, or API. Also update docs/README.md if the change is significant enough to warrant it. Only update docs that are actually affected by the change."
+  },
+  "workspaceFolderName": "test",
+  "shortName": "sync-docs-on-source-change"
+}

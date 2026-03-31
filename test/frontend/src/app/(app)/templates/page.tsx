@@ -1,21 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { useTemplates, useDeleteTemplate } from '@/lib/hooks/useTemplates';
+import { useQuoteTemplates, useDeleteQuoteTemplate } from '@/lib/hooks/useQuoteTemplates';
 import { TemplateModal } from '@/components/templates/TemplateModal';
 import { Button } from '@/components/ui/Button';
-import type { Template } from '@/lib/types';
+import type { QuoteTemplate } from '@/lib/types';
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' }).format(new Date(dateStr));
 }
 
 export default function TemplatesPage() {
-  const { data: templates, isLoading, isError } = useTemplates();
-  const deleteTemplate = useDeleteTemplate();
+  const { data: templates, isLoading, isError } = useQuoteTemplates();
+  const deleteTemplate = useDeleteQuoteTemplate();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<QuoteTemplate | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function openCreate() {
@@ -23,12 +23,12 @@ export default function TemplatesPage() {
     setModalOpen(true);
   }
 
-  function openEdit(template: Template) {
+  function openEdit(template: QuoteTemplate) {
     setEditingTemplate(template);
     setModalOpen(true);
   }
 
-  async function handleDelete(template: Template) {
+  async function handleDelete(template: QuoteTemplate) {
     if (!confirm(`¿Eliminar la plantilla "${template.name}"?`)) return;
     setDeletingId(template.id);
     try {
@@ -47,7 +47,7 @@ export default function TemplatesPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Plantillas</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Reutiliza configuraciones predefinidas al crear cotizaciones.
+            Reutiliza configuraciones e ítems predefinidos al crear cotizaciones.
           </p>
         </div>
         <Button onClick={openCreate}>+ Nueva plantilla</Button>
@@ -66,10 +66,7 @@ export default function TemplatesPage() {
         ) : list.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-gray-400">No hay plantillas disponibles.</p>
-            <button
-              onClick={openCreate}
-              className="mt-2 text-sm text-blue-600 hover:underline"
-            >
+            <button onClick={openCreate} className="mt-2 text-sm text-blue-600 hover:underline">
               Crear tu primera plantilla
             </button>
           </div>
@@ -80,6 +77,7 @@ export default function TemplatesPage() {
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Nombre</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Moneda</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Impuesto</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Ítems</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Tipo</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Creada</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">Acciones</th>
@@ -89,8 +87,17 @@ export default function TemplatesPage() {
               {list.map((tpl) => (
                 <tr key={tpl.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{tpl.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{tpl.content.currency ?? 'USD'}</td>
-                  <td className="px-4 py-3 text-gray-500">{tpl.content.taxRate ?? 0}%</td>
+                  <td className="px-4 py-3 text-gray-500">{tpl.currency ?? 'USD'}</td>
+                  <td className="px-4 py-3 text-gray-500">{tpl.taxRate ?? 0}%</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {tpl.items?.length > 0 ? (
+                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                        {tpl.items.length} ítem{tpl.items.length !== 1 ? 's' : ''}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">Sin ítems</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {tpl.isDefault ? (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
@@ -104,13 +111,11 @@ export default function TemplatesPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(tpl.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
-                    {tpl.isDefault ? (
-                      <span className="text-xs text-gray-400 italic">Solo lectura</span>
-                    ) : (
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(tpl)}>
-                          Editar
-                        </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(tpl)}>
+                        {tpl.isDefault ? 'Ver' : 'Editar'}
+                      </Button>
+                      {!tpl.isDefault && (
                         <Button
                           variant="danger"
                           size="sm"
@@ -119,8 +124,8 @@ export default function TemplatesPage() {
                         >
                           Eliminar
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -132,7 +137,8 @@ export default function TemplatesPage() {
       <TemplateModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        template={editingTemplate}
+        quoteTemplate={editingTemplate}
+        useQuoteTemplateMode
       />
     </div>
   );

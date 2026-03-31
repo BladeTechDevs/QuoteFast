@@ -18,6 +18,7 @@ import { QuotesSendService } from './quotes-send.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { ListQuotesDto } from './dto/list-quotes.dto';
+import { SaveQuoteAsTemplateDto } from '../templates/dto/save-quote-as-template.dto';
 
 @Controller('quotes')
 @UseGuards(JwtAuthGuard)
@@ -71,5 +72,14 @@ export class QuotesController {
   @HttpCode(HttpStatus.ACCEPTED)
   send(@Request() req, @Param('id') id: string) {
     return this.quotesSendService.send(req.user.id, id);
+  }
+
+  @Post(':id/save-as-template')
+  saveAsTemplate(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: SaveQuoteAsTemplateDto,
+  ) {
+    return this.quotesService.saveAsTemplate(req.user.id, id, dto);
   }
 }

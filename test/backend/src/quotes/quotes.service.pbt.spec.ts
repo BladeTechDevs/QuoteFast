@@ -4,6 +4,7 @@ import * as fc from 'fast-check';
 import { Plan, QuoteStatus } from '@prisma/client';
 import { QuotesService } from './quotes.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Feature: saas-quote-platform, Property 8: Límite del plan FREE
@@ -73,6 +74,10 @@ describe('QuotesService — Property 8: FREE plan monthly limit', () => {
             },
             template: { findFirst: jest.fn() },
           },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

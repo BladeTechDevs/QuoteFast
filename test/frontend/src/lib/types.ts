@@ -138,6 +138,49 @@ export interface PublicQuoteItem {
   order: number;
 }
 
+export interface CatalogItem {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string | null;
+  unitPrice: number;
+  taxRate: number;
+  discount: number;
+  internalCost: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateItem {
+  id: string;
+  templateId: string;
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  taxRate: number;
+  internalCost: number;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuoteTemplate {
+  id: string;
+  userId: string | null;
+  name: string;
+  currency: string;
+  taxRate: number;
+  discount: number;
+  notes?: string | null;
+  terms?: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+  items: TemplateItem[];
+}
+
 export interface BrandingSettings {
   logoUrl: string | null;
   primaryColor: string;

@@ -6,6 +6,7 @@ import { PublicQuotesService } from './public-quotes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { SqsService } from '../quotes/sqs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Feature: saas-quote-platform, Property 5: Transiciones de estado válidas
@@ -46,6 +47,10 @@ describe('PublicQuotesService — Property 5: Valid state transitions', () => {
         {
           provide: SqsService,
           useValue: { enqueue: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

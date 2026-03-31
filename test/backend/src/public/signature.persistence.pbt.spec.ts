@@ -5,6 +5,7 @@ import { SignatureService } from './signature.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Property-Based Tests for Signature Data Persistence
@@ -105,6 +106,10 @@ describe('SignatureService — Persistence Property-Based Tests', () => {
           useValue: {
             registerEvent: jest.fn().mockResolvedValue(undefined),
           },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

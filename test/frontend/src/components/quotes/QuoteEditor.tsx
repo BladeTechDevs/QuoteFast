@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useClients } from '@/lib/hooks/useClients';
-import { useTemplates } from '@/lib/hooks/useTemplates';
+import { useQuoteTemplates, useSaveQuoteAsTemplate } from '@/lib/hooks/useQuoteTemplates';
 import {
   useCreateQuote,
   useUpdateQuote,
@@ -16,6 +16,9 @@ import {
   useSendQuote,
 } from '@/lib/hooks/useQuoteDetail';
 import { apiClient } from '@/lib/api';
+import { CatalogSearch } from '@/components/catalog/CatalogSearch';
+import { Modal } from '@/components/ui/Modal';
+
 import type { QuoteDetail, QuoteItem } from '@/lib/types';
 
 // ── Calculation ──────────────────────────────────────────────────────────────
@@ -82,7 +85,7 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
 
   const { data: clientsData } = useClients();
   const clients = clientsData?.data ?? [];
-  const { data: templatesData } = useTemplates();
+  const { data: templatesData } = useQuoteTemplates();
   const templates = templatesData ?? [];
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
@@ -156,11 +159,23 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
   function applyTemplate(templateId: string) {
     const tpl = templates.find((t) => t.id === templateId);
     if (!tpl) return;
-    if (tpl.content.currency) setCurrency(tpl.content.currency);
-    if (tpl.content.taxRate !== undefined) setTaxRate(String(tpl.content.taxRate));
-    if (tpl.content.discount !== undefined) setDiscount(String(tpl.content.discount));
-    if (tpl.content.notes) setNotes(tpl.content.notes);
-    if (tpl.content.terms) setTerms(tpl.content.terms);
+    if (tpl.currency) setCurrency(tpl.currency);
+    if (tpl.taxRate !== undefined) setTaxRate(String(tpl.taxRate));
+    if (tpl.discount !== undefined) setDiscount(String(tpl.discount));
+    if (tpl.notes) setNotes(tpl.notes);
+    if (tpl.terms) setTerms(tpl.terms);
+    if (tpl.items?.length) {
+      setItems(tpl.items.map((it) => ({
+        tempId: crypto.randomUUID(),
+        name: it.name,
+        description: it.description ?? '',
+        quantity: String(it.quantity ?? 1),
+        unitPrice: String(it.unitPrice),
+        discount: String(it.discount ?? 0),
+        taxRate: String(it.taxRate ?? 0),
+        internalCost: String(it.internalCost ?? 0),
+      })));
+    }
     setShowTemplateSelector(false);
   }
 
@@ -221,9 +236,36 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
     });
   }
 
+  function handleCatalogSelect(fields: { name: string; description: string; unitPrice: number; taxRate: number; discount: number; internalCost: number }) {
+    const newItem: LocalItem = {
+      ...newLocalItem(),
+      name: fields.name,
+      description: fields.description,
+      unitPrice: String(fields.unitPrice),
+      taxRate: String(fields.taxRate),
+      discount: String(fields.discount),
+      internalCost: String(fields.internalCost),
+    };
+    setItems((prev) => {
+      // Replace the last empty item if it has no name, otherwise append
+      const last = prev[prev.length - 1];
+      if (last && !last.name.trim() && !last.id) {
+        return [...prev.slice(0, -1), newItem];
+      }
+      return [...prev, newItem];
+    });
+  }
+
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateNameError, setTemplateNameError] = useState('');
+  const [saveAsTemplateSuccess, setSaveAsTemplateSuccess] = useState('');
+  const [saveAsTemplateError, setSaveAsTemplateError] = useState('');
+  const saveAsTemplate = useSaveQuoteAsTemplate();
 
   async function handleSend() {
     if (isNew || !quote?.id) return;
@@ -251,7 +293,29 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
 
   const selectClass = 'rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-400 w-full';
 
+  async function handleSaveAsTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!templateName.trim()) {
+      setTemplateNameError('El nombre es obligatorio');
+      return;
+    }
+    if (!quote?.id) return;
+    setTemplateNameError('');
+    setSaveAsTemplateError('');
+    try {
+      const created = await saveAsTemplate.mutateAsync({ quoteId: quote.id, name: templateName.trim() });
+      setSaveAsTemplateSuccess(created.name);
+      setSaveAsTemplateOpen(false);
+      setTemplateName('');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string | string[] } } };
+      const msg = e.response?.data?.message;
+      setSaveAsTemplateError(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Error al guardar la plantilla.'));
+    }
+  }
+
   return (
+    <>
     <div className="flex gap-6 items-start">
 
       {/* ── Left column: form fields ── */}
@@ -283,6 +347,11 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
         {sendError && (
           <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
             {sendError}
+          </div>
+        )}
+        {saveAsTemplateSuccess && (
+          <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+            Plantilla &ldquo;{saveAsTemplateSuccess}&rdquo; creada exitosamente.
           </div>
         )}
 
@@ -381,6 +450,22 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
               Enviar cotización
             </Button>
           ) : null}
+          {!isNew && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                setTemplateName(title || '');
+                setTemplateNameError('');
+                setSaveAsTemplateError('');
+                setSaveAsTemplateSuccess('');
+                setSaveAsTemplateOpen(true);
+              }}
+            >
+              💾 Guardar como plantilla
+            </Button>
+          )}
         </div>
       </div>
 
@@ -389,12 +474,17 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
         <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
 
           {/* Table header */}
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Ítems</h2>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide shrink-0">Ítems</h2>
             {!isReadOnly && (
-              <Button variant="secondary" size="sm" onClick={() => setItems((prev) => [...prev, newLocalItem()])}>
-                + Agregar ítem
-              </Button>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <CatalogSearch onSelect={handleCatalogSelect} disabled={isReadOnly} />
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => setItems((prev) => [...prev, newLocalItem()])}>
+                  + Agregar ítem
+                </Button>
+              </div>
             )}
           </div>
 
@@ -464,6 +554,44 @@ export function QuoteEditor({ quote }: QuoteEditorProps) {
       </div>
 
     </div>
+
+    {/* Save as Template Modal */}
+    <Modal
+      open={saveAsTemplateOpen}
+      onClose={() => { setSaveAsTemplateOpen(false); setTemplateName(''); setTemplateNameError(''); setSaveAsTemplateError(''); }}
+      title="Guardar como plantilla"
+    >
+      <form onSubmit={handleSaveAsTemplate} className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Se creará una nueva plantilla con los metadatos e ítems de esta cotización.
+        </p>
+        <Input
+          label="Nombre de la plantilla *"
+          value={templateName}
+          onChange={(e) => { setTemplateName(e.target.value); setTemplateNameError(''); }}
+          error={templateNameError}
+          placeholder="Ej. Propuesta de desarrollo web"
+          autoFocus
+        />
+        {saveAsTemplateError && (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{saveAsTemplateError}</p>
+        )}
+        <div className="flex justify-end gap-3 pt-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => { setSaveAsTemplateOpen(false); setTemplateName(''); setTemplateNameError(''); setSaveAsTemplateError(''); }}
+            disabled={saveAsTemplate.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" loading={saveAsTemplate.isPending}>
+            Guardar plantilla
+          </Button>
+        </div>
+      </form>
+    </Modal>
+    </>
   );
 }
 

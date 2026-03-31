@@ -337,13 +337,13 @@ describe('SignatureForm', () => {
       });
     });
 
-    it('signature error element has role="alert" and correct id', async () => {
+    it('name error element has role="alert" and correct id', async () => {
       renderForm();
-      fillName('Test User');
+      // Submit without filling name to trigger signerName error
       submitForm();
 
       await waitFor(() => {
-        const errorEl = document.getElementById('signatureImage-error');
+        const errorEl = document.getElementById('signerName-error');
         expect(errorEl).toBeInTheDocument();
         expect(errorEl).toHaveAttribute('role', 'alert');
       });

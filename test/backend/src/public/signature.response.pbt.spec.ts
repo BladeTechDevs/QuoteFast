@@ -5,6 +5,7 @@ import { SignatureService } from './signature.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Property-Based Tests for Signature API Response Structure
@@ -132,6 +133,10 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
           useValue: {
             registerEvent: jest.fn().mockResolvedValue(undefined),
           },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();
@@ -471,6 +476,7 @@ describe('SignatureService — Response Structure Property-Based Tests', () => {
 import { PublicQuotesService } from './public-quotes.service';
 import { TrackingService as _TrackingService } from '../tracking/tracking.service';
 import { SqsService } from '../quotes/sqs.service';
+import { NotificationsService as _NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Feature: advanced-calculator
@@ -552,6 +558,10 @@ describe('PublicQuotesService — internalCost exclusion (advanced-calculator PB
         {
           provide: SqsService,
           useValue: { enqueue: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: _NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

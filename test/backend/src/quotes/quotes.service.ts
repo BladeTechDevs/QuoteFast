@@ -11,6 +11,7 @@ import { CreateQuoteDto } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { ListQuotesDto } from './dto/list-quotes.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SaveQuoteAsTemplateDto } from '../templates/dto/save-quote-as-template.dto';
 
 const TERMINAL_STATES: QuoteStatus[] = [
   QuoteStatus.ACCEPTED,
@@ -34,35 +35,149 @@ export class QuotesService {
       await this.enforceFreePlanLimit(userId);
     }
 
-    // Pre-populate fields from template if templateId is provided
-    let templateDefaults: Record<string, any> = {};
+    // Check if templateId corresponds to a QuoteTemplate (new model) first
+    let quoteTemplate: Awaited<ReturnType<typeof this.prisma.quoteTemplate.findFirst>> & {
+      items?: any[];
+    } | null = null;
+    let legacyTemplateDefaults: Record<string, any> = {};
+
     if (dto.templateId) {
-      const template = await this.prisma.template.findFirst({
+      quoteTemplate = await this.prisma.quoteTemplate.findFirst({
         where: {
           id: dto.templateId,
           OR: [{ userId }, { isDefault: true, userId: null }],
         },
+        include: { items: { orderBy: { order: 'asc' } } },
       });
-      if (template && template.content && typeof template.content === 'object') {
-        templateDefaults = template.content as Record<string, any>;
+
+      if (!quoteTemplate) {
+        // Fall back to old Template model
+        const legacyTemplate = await this.prisma.template.findFirst({
+          where: {
+            id: dto.templateId,
+            OR: [{ userId }, { isDefault: true, userId: null }],
+          },
+        });
+
+        if (!legacyTemplate) {
+          throw new NotFoundException('Quote template not found');
+        }
+
+        if (legacyTemplate.content && typeof legacyTemplate.content === 'object') {
+          legacyTemplateDefaults = legacyTemplate.content as Record<string, any>;
+        }
       }
     }
 
-    const quote = await this.prisma.quote.create({
-      data: {
-        userId,
-        title: dto.title,
-        clientId: dto.clientId ?? null,
-        currency: dto.currency ?? templateDefaults['currency'] ?? 'USD',
-        taxRate: dto.taxRate ?? templateDefaults['taxRate'] ?? 0,
-        discount: dto.discount ?? templateDefaults['discount'] ?? 0,
-        notes: dto.notes ?? templateDefaults['notes'] ?? null,
-        terms: dto.terms ?? templateDefaults['terms'] ?? null,
-        validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
-        status: QuoteStatus.DRAFT,
-      },
-      include: { items: true, client: true },
-    });
+    // Resolve metadata: DTO takes precedence over template values
+    const templateMeta = quoteTemplate
+      ? {
+          currency: quoteTemplate.currency,
+          taxRate: Number(quoteTemplate.taxRate),
+          discount: Number(quoteTemplate.discount),
+          notes: quoteTemplate.notes,
+          terms: quoteTemplate.terms,
+        }
+      : legacyTemplateDefaults;
+
+    const currency = dto.currency ?? templateMeta['currency'] ?? 'USD';
+    const taxRate = dto.taxRate ?? templateMeta['taxRate'] ?? 0;
+    const discount = dto.discount ?? templateMeta['discount'] ?? 0;
+    const notes = dto.notes ?? templateMeta['notes'] ?? null;
+    const terms = dto.terms ?? templateMeta['terms'] ?? null;
+
+    // Use a transaction when creating from a QuoteTemplate with items
+    const templateItems: any[] = quoteTemplate?.items ?? [];
+    const hasTemplateItems = templateItems.length > 0;
+
+    let quote: any;
+
+    if (hasTemplateItems) {
+      quote = await this.prisma.$transaction(async (tx) => {
+        const createdQuote = await tx.quote.create({
+          data: {
+            userId,
+            title: dto.title,
+            clientId: dto.clientId ?? null,
+            currency,
+            taxRate,
+            discount,
+            notes,
+            terms,
+            validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
+            status: QuoteStatus.DRAFT,
+            quoteTemplateId: quoteTemplate!.id,
+          },
+        });
+
+        // Copy TemplateItems as QuoteItems, calculating total for each
+        const quoteItemsData = templateItems.map((item) => {
+          const itemTotal = calculateItemTotal({
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            discount: Number(item.discount),
+            taxRate: Number(item.taxRate),
+          });
+          return {
+            quoteId: createdQuote.id,
+            name: item.name,
+            description: item.description ?? null,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discount: item.discount,
+            taxRate: item.taxRate,
+            internalCost: item.internalCost,
+            order: item.order,
+            total: itemTotal,
+          };
+        });
+
+        await tx.quoteItem.createMany({ data: quoteItemsData });
+
+        // Recalculate quote totals based on copied items
+        const totals = calculateQuoteTotals(
+          templateItems.map((item) => ({
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            discount: Number(item.discount),
+            taxRate: Number(item.taxRate),
+          })),
+          taxRate,
+          discount,
+        );
+
+        await tx.quote.update({
+          where: { id: createdQuote.id },
+          data: {
+            subtotal: totals.subtotal,
+            taxAmount: totals.taxAmount,
+            total: totals.total,
+          },
+        });
+
+        return tx.quote.findUnique({
+          where: { id: createdQuote.id },
+          include: { items: { orderBy: { order: 'asc' } }, client: true },
+        });
+      });
+    } else {
+      quote = await this.prisma.quote.create({
+        data: {
+          userId,
+          title: dto.title,
+          clientId: dto.clientId ?? null,
+          currency,
+          taxRate,
+          discount,
+          notes,
+          terms,
+          validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
+          status: QuoteStatus.DRAFT,
+          ...(quoteTemplate ? { quoteTemplateId: quoteTemplate.id } : {}),
+        },
+        include: { items: true, client: true },
+      });
+    }
 
     // Notify creation
     await this.notifications.create({
@@ -247,6 +362,53 @@ export class QuotesService {
         total: totals.total,
       },
       include: { items: { orderBy: { order: 'asc' } }, client: true },
+    });
+  }
+
+  async saveAsTemplate(userId: string, quoteId: string, dto: SaveQuoteAsTemplateDto) {
+    const quote = await this.prisma.quote.findFirst({
+      where: { id: quoteId, userId, deletedAt: null },
+      include: { items: { orderBy: { order: 'asc' } } },
+    });
+
+    if (!quote) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const template = await tx.quoteTemplate.create({
+        data: {
+          userId,
+          name: dto.name,
+          currency: quote.currency,
+          taxRate: quote.taxRate,
+          discount: quote.discount,
+          notes: quote.notes ?? null,
+          terms: quote.terms ?? null,
+          isDefault: false,
+        },
+      });
+
+      if (quote.items.length > 0) {
+        await tx.templateItem.createMany({
+          data: quote.items.map((item) => ({
+            templateId: template.id,
+            name: item.name,
+            description: item.description ?? null,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discount: item.discount,
+            taxRate: item.taxRate,
+            internalCost: item.internalCost,
+            order: item.order,
+          })),
+        });
+      }
+
+      return tx.quoteTemplate.findUnique({
+        where: { id: template.id },
+        include: { items: { orderBy: { order: 'asc' } } },
+      });
     });
   }
 
