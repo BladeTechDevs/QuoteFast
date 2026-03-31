@@ -5,12 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SqsService } from './sqs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class QuotesSendService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sqsService: SqsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async send(userId: string, quoteId: string): Promise<void> {
@@ -36,6 +38,15 @@ export class QuotesSendService {
         status: 'SENT',
         sentAt: new Date(),
       },
+    });
+
+    // Notify the user that the quote was sent
+    await this.notifications.create({
+      userId,
+      type: 'QUOTE_SENT',
+      title: 'Cotización enviada',
+      message: `La cotización "${quote.title}" fue enviada al cliente. Se está generando el PDF y enviando el email.`,
+      quoteId: quote.id,
     });
 
     // Only enqueue to SQS if AWS credentials are configured

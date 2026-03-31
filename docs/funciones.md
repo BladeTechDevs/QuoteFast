@@ -105,13 +105,16 @@ Envía una cotización. Verifica que exista y pertenezca al usuario, y que tenga
 ## QuotesRemindersService (`src/quotes/quotes-reminders.service.ts`)
 
 ### `runDailyJobs()` _(cron: todos los días a las 9am UTC)_
-Ejecuta en paralelo `sendFollowUpReminders` y `expireOverdueQuotes`.
+Ejecuta en paralelo `sendFollowUpReminders`, `expireOverdueQuotes` y `purgeOldNotifications`.
 
 ### `sendFollowUpReminders()` _(privada)_
-Busca cotizaciones en estado `SENT` que no han sido vistas (`viewedAt = null`) y fueron enviadas hace más de 3 días. Por cada una, encola un job `SEND_EMAIL` en SQS para enviar un recordatorio al cliente.
+Busca cotizaciones en estado `SENT` que no han sido vistas (`viewedAt = null`) y fueron enviadas hace más de 3 días. Por cada una, encola un job `SEND_EMAIL` en SQS para enviar un recordatorio al cliente y crea una notificación `QUOTE_REMINDER_SENT` para el dueño.
 
 ### `expireOverdueQuotes()` _(privada)_
-Marca como `EXPIRED` todas las cotizaciones en estado `SENT` o `VIEWED` cuya `validUntil` ya pasó. Usa `updateMany` para hacerlo en una sola query.
+Busca cotizaciones en estado `SENT` o `VIEWED` cuya `validUntil` ya pasó. Las marca como `EXPIRED` y crea una notificación `QUOTE_EXPIRED` por cada una.
+
+### `purgeOldNotifications()` _(privada)_
+Llama a `NotificationsService.deleteOldAll()` para eliminar todas las notificaciones leídas con más de 3 días de antigüedad.
 
 ---
 

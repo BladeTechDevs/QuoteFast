@@ -8,6 +8,7 @@ import { QuoteStatus, TrackingEventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface SignQuoteParams {
   publicId: string;
@@ -29,6 +30,7 @@ export class SignatureService {
     private readonly prisma: PrismaService,
     private readonly quotesService: QuotesService,
     private readonly trackingService: TrackingService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -143,6 +145,16 @@ export class SignatureService {
         signerName: signerName.trim(),
         via: 'signature',
       },
+    });
+
+    // Notify owner that the quote was signed
+    await this.notifications.create({
+      userId: quote.userId,
+      type: 'QUOTE_SIGNED_BY_CLIENT',
+      title: '¡Cotización firmada!',
+      message: `${signerName.trim()} firmó electrónicamente la cotización "${quote.title}". La cotización está aceptada.`,
+      quoteId: quote.id,
+      metadata: { signerName: signerName.trim() },
     });
 
     return {

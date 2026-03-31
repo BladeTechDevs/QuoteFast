@@ -6,12 +6,14 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { clsx } from 'clsx';
+import { NotificationBell } from './NotificationBell';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/quotes', label: 'Cotizaciones', icon: '📄' },
   { href: '/clients', label: 'Clientes', icon: '👥' },
   { href: '/templates', label: 'Plantillas', icon: '📋' },
+  { href: '/notifications', label: 'Notificaciones', icon: '🔔' },
   { href: '/settings', label: 'Configuración', icon: '⚙️' },
 ];
 
@@ -45,8 +47,9 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white">
       {/* Logo */}
-      <div className="flex h-14 items-center px-4 border-b border-gray-200">
+      <div className="flex h-14 items-center justify-between px-4 border-b border-gray-200">
         <span className="text-lg font-bold text-blue-600">QuoteFast</span>
+        <NotificationBell />
       </div>
 
       {/* Nav */}

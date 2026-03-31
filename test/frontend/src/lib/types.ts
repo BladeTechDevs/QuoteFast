@@ -6,6 +6,32 @@ export type QuoteStatus =
   | 'REJECTED'
   | 'EXPIRED';
 
+export type NotificationType =
+  | 'QUOTE_CREATED'
+  | 'QUOTE_SENT'
+  | 'QUOTE_VIEWED_BY_CLIENT'
+  | 'QUOTE_ACCEPTED_BY_CLIENT'
+  | 'QUOTE_REJECTED_BY_CLIENT'
+  | 'QUOTE_SIGNED_BY_CLIENT'
+  | 'QUOTE_EXPIRED'
+  | 'QUOTE_PDF_READY'
+  | 'QUOTE_REMINDER_SENT'
+  | 'PLAN_LIMIT_WARNING'
+  | 'PLAN_LIMIT_REACHED'
+  | 'PLAN_UPGRADED';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  quoteId: string | null;
+  metadata: Record<string, unknown> | null;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface Client {
   id: string;
   name: string;

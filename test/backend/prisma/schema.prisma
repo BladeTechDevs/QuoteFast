@@ -32,6 +32,23 @@ enum TrackingEventType {
   QUOTE_EXPIRED
 }
 
+enum NotificationType {
+  // Flujo de cotización
+  QUOTE_CREATED
+  QUOTE_SENT
+  QUOTE_VIEWED_BY_CLIENT
+  QUOTE_ACCEPTED_BY_CLIENT
+  QUOTE_REJECTED_BY_CLIENT
+  QUOTE_SIGNED_BY_CLIENT
+  QUOTE_EXPIRED
+  QUOTE_PDF_READY
+  QUOTE_REMINDER_SENT
+  // Membresía
+  PLAN_LIMIT_WARNING      // Quedan pocas cotizaciones
+  PLAN_LIMIT_REACHED      // Límite alcanzado
+  PLAN_UPGRADED           // Plan mejorado
+}
+
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -46,6 +63,7 @@ model User {
   clients          Client[]
   templates        Template[]
   brandingSettings BrandingSettings?
+  notifications    Notification[]
 }
 
 model Client {
@@ -166,4 +184,21 @@ model BrandingSettings {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  quoteId   String?
+  metadata  Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
 }

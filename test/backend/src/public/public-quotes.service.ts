@@ -7,6 +7,7 @@ import { QuoteStatus, TrackingEventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { SqsService } from '../quotes/sqs.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const TERMINAL_STATES: QuoteStatus[] = [
   QuoteStatus.ACCEPTED,
@@ -20,6 +21,7 @@ export class PublicQuotesService {
     private readonly prisma: PrismaService,
     private readonly trackingService: TrackingService,
     private readonly sqsService: SqsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async findByPublicId(publicId: string) {
@@ -94,6 +96,17 @@ export class PublicQuotesService {
       ipAddress,
       userAgent,
     }).catch(() => { /* ignore tracking errors */ });
+
+    // Notify owner when client opens the quote for the first time
+    if (quote.viewedAt === null) {
+      this.notifications.create({
+        userId: quote.userId,
+        type: 'QUOTE_VIEWED_BY_CLIENT',
+        title: 'Tu cotización fue abierta',
+        message: `El cliente abrió la cotización "${quote.title}". Está revisando tu propuesta.`,
+        quoteId: quote.id,
+      }).catch(() => { /* ignore notification errors */ });
+    }
 
     return this.toPublicShape(quote);
   }
@@ -193,7 +206,7 @@ export class PublicQuotesService {
   ): Promise<void> {
     const quote = await this.prisma.quote.findUnique({
       where: { publicId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, title: true, userId: true },
     });
 
     if (!quote) {
@@ -218,6 +231,14 @@ export class PublicQuotesService {
       userAgent,
     });
 
+    await this.notifications.create({
+      userId: quote.userId,
+      type: 'QUOTE_ACCEPTED_BY_CLIENT',
+      title: '¡Cotización aceptada!',
+      message: `El cliente aceptó la cotización "${quote.title}". Puedes proceder con el trabajo.`,
+      quoteId: quote.id,
+    });
+
     // Notify owner via SQS (only if AWS is configured)
     if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
       await this.sqsService.enqueue({
@@ -235,7 +256,7 @@ export class PublicQuotesService {
   ): Promise<void> {
     const quote = await this.prisma.quote.findUnique({
       where: { publicId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, title: true, userId: true },
     });
 
     if (!quote) {
@@ -258,6 +279,14 @@ export class PublicQuotesService {
       eventType: TrackingEventType.QUOTE_REJECTED,
       ipAddress,
       userAgent,
+    });
+
+    await this.notifications.create({
+      userId: quote.userId,
+      type: 'QUOTE_REJECTED_BY_CLIENT',
+      title: 'Cotización rechazada',
+      message: `El cliente rechazó la cotización "${quote.title}". Considera hacer ajustes y enviar una nueva propuesta.`,
+      quoteId: quote.id,
     });
 
     // Notify owner via SQS (only if AWS is configured)

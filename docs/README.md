@@ -17,6 +17,7 @@ QuoteFast es una plataforma SaaS para crear, enviar y rastrear cotizaciones prof
 - [Dependencias Externas (AWS)](./dependencias-externas.md)
 - [Referencia de Funciones](./funciones.md)
 - [Flujo de una Cotización](./flujo-cotizacion.md)
+- [Sistema de Notificaciones](./notificaciones.md)
 - [Documento Formal de Requerimientos (DFR)](./DFR-QuoteFast.md)
 
 ## Stack Tecnológico

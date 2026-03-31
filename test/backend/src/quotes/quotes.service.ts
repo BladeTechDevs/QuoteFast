@@ -10,6 +10,7 @@ import { calculateItemTotal, calculateQuoteTotals } from './utils/calculate-tota
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { ListQuotesDto } from './dto/list-quotes.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const TERMINAL_STATES: QuoteStatus[] = [
   QuoteStatus.ACCEPTED,
@@ -21,7 +22,10 @@ const FREE_PLAN_MONTHLY_LIMIT = 5;
 
 @Injectable()
 export class QuotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(userId: string, dto: CreateQuoteDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -44,7 +48,7 @@ export class QuotesService {
       }
     }
 
-    return this.prisma.quote.create({
+    const quote = await this.prisma.quote.create({
       data: {
         userId,
         title: dto.title,
@@ -59,6 +63,22 @@ export class QuotesService {
       },
       include: { items: true, client: true },
     });
+
+    // Notify creation
+    await this.notifications.create({
+      userId,
+      type: 'QUOTE_CREATED',
+      title: 'Cotización creada',
+      message: `La cotización "${quote.title}" fue creada en estado borrador. Agrega ítems y envíala cuando esté lista.`,
+      quoteId: quote.id,
+    });
+
+    // Warn about plan limits after creation
+    if (user?.plan === Plan.FREE) {
+      await this.notifyPlanUsage(userId, quote.id);
+    }
+
+    return quote;
   }
 
   async findAll(userId: string, query: ListQuotesDto) {
@@ -243,9 +263,45 @@ export class QuotesService {
     });
 
     if (count >= FREE_PLAN_MONTHLY_LIMIT) {
+      await this.notifications.create({
+        userId,
+        type: 'PLAN_LIMIT_REACHED',
+        title: 'Límite de cotizaciones alcanzado',
+        message: `Has alcanzado el límite de ${FREE_PLAN_MONTHLY_LIMIT} cotizaciones del plan gratuito este mes. Actualiza tu plan para continuar.`,
+      });
       throw new ForbiddenException(
         'Free plan limit reached: maximum 5 quotes per month. Please upgrade your plan.',
       );
+    }
+  }
+
+  private async notifyPlanUsage(userId: string, quoteId: string) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const count = await this.prisma.quote.count({
+      where: { userId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
+    });
+
+    const remaining = FREE_PLAN_MONTHLY_LIMIT - count;
+
+    if (remaining === 2) {
+      await this.notifications.create({
+        userId,
+        type: 'PLAN_LIMIT_WARNING',
+        title: 'Te quedan 2 cotizaciones este mes',
+        message: `Con tu plan gratuito puedes crear ${FREE_PLAN_MONTHLY_LIMIT} cotizaciones por mes. Te quedan 2. Considera actualizar tu plan.`,
+        quoteId,
+      });
+    } else if (remaining === 1) {
+      await this.notifications.create({
+        userId,
+        type: 'PLAN_LIMIT_WARNING',
+        title: 'Te queda 1 cotización este mes',
+        message: `Esta es tu última cotización disponible del plan gratuito este mes. Actualiza tu plan para crear más sin límites.`,
+        quoteId,
+      });
     }
   }
 }

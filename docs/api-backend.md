@@ -124,6 +124,18 @@ Los tokens de acceso expiran. Usar el endpoint de refresh para renovarlos.
 
 ---
 
+### Notifications — `/api/notifications`
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/notifications` | Sí | Listar notificaciones (últimas 50) |
+| GET | `/notifications?unread=true` | Sí | Solo notificaciones no leídas |
+| GET | `/notifications/unread-count` | Sí | Cantidad de no leídas |
+| PATCH | `/notifications/:id/read` | Sí | Marcar una como leída |
+| PATCH | `/notifications/read-all` | Sí | Marcar todas como leídas |
+
+---
+
 ### Public — `/api/public` (sin autenticación)
 
 | Método | Ruta | Auth | Descripción |
